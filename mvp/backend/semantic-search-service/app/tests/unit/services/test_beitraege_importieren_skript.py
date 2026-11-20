@@ -262,7 +262,7 @@ class TestDateiLesen:
                 }
             ],
             "statement_text": "Windräder töten die Vögel!",
-            "cc0_wortlaut": "2026-11-02-formular",
+            "cc0_wortlaut": "2026-11-20-formular",
         }
 
     def test_beispieldatei_ist_fehlerfrei(self, skript):
@@ -520,7 +520,7 @@ class TestImportieren:
                 skript.ApiFehler(
                     422,
                     "Value error, Unbekannter Wortlaut des CC0-Hinweises: "
-                    "2026-11-02-formular",
+                    "2026-11-20-formular",
                 )
             ],
         )

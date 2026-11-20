@@ -1,0 +1,152 @@
+<!-- Der Deckel: drei Zahlen und der Wirkungssatz; ohne Nutzung der naechste Meilenstein gross -->
+<section class="deckel" [class.deckel--meilenstein-gross]="meilensteinGross"
+         [class.deckel--mit-meilenstein]="naechsterMeilenstein" aria-labelledby="album-deckel-titel">
+    <h2 id="album-deckel-titel" class="cdk-visually-hidden">Dein Album in Zahlen</h2>
+    <div class="deckel-zahlen">
+        <p class="beitraege-gross" *ngIf="beitraegeGross" data-testid="beitraege-gross">{{ beitraegeSatz }}</p>
+        <ul class="zahlen" *ngIf="!beitraegeGross">
+            <li class="zahl">
+                <span class="zahl-wert">{{ zahlen.beitraege }}</span>
+                <span class="zahl-name">{{ zahlen.beitraege === 1 ? 'Beitrag' : 'Beiträge' }}</span>
+            </li>
+            <li class="zahl" *ngIf="!meilensteinGross" data-testid="zahl-genutzt">
+                <span class="zahl-wert">{{ zahlen.nutzung }}×</span>
+                <span class="zahl-name">genutzt</span>
+                <span class="zahl-zusatz" *ngIf="zahlen.dieseWoche">+{{ zahlen.dieseWoche }} diese Woche</span>
+            </li>
+            <li class="zahl">
+                <span class="zahl-wert">{{ zahlen.themen }}</span>
+                <span class="zahl-name">{{ zahlen.themen === 1 ? 'Thema' : 'Themen' }}</span>
+            </li>
+        </ul>
+        <p class="wirkung">{{ wirkung }}</p>
+        <!-- Bei 0 Nutzungen: was „genutzt“ heisst und was als Naechstes hilft (UX-Review B11) -->
+        <p class="leer-hinweis" *ngIf="!zahlen.nutzung" data-testid="nutzung-leer">
+            Genutzt heißt: Jemand hat einen davon kopiert oder geteilt. Teil den Link eines Beitrags,
+            dann findet er schneller seinen Weg.
+        </p>
+    </div>
+
+    <div class="naechster" *ngIf="naechsterMeilenstein as m" data-testid="naechster-meilenstein">
+        <span class="naechster-medaillon" aria-hidden="true"><img [src]="m.bild" alt="" width="32" height="32"></span>
+        <div class="naechster-text">
+            <span class="naechster-vorsatz">Nächster Meilenstein</span>
+            <span class="naechster-name">{{ m.name }}</span>
+            <span class="naechster-stand">{{ m.stand }} von {{ m.schwelle }}<ng-container *ngIf="meilensteinRest"> · noch {{ meilensteinRest }}</ng-container></span>
+            <div class="balken" role="progressbar" aria-valuemin="0"
+                 [attr.aria-valuemax]="m.schwelle" [attr.aria-valuenow]="m.stand"
+                 [attr.aria-label]="'Nächster Meilenstein: ' + m.name">
+                <i [style.width.%]="meilensteinProzent"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Marke vor der Leiste: ist sie oben aus dem Bild, klebt die Leiste -->
+<div #marke class="klebe-marke" aria-hidden="true"></div>
+
+<!-- Klebende Suche nur ueber die eigenen Beitraege; bis 6 Beitraege keine (Entscheidung 20.11.) -->
+<div class="suche" *ngIf="mitSuche" role="search" aria-label="Eigene Beiträge durchsuchen"
+     [class.suche--klebt]="klebt">
+    <div class="suche-zeile">
+        <div class="feld feld--suche">
+            <label class="feld-name" for="album-suche">{{ suchName }}</label>
+            <mat-icon class="feld-symbol" aria-hidden="true">search</mat-icon>
+            <input #suchfeld id="album-suche" type="search" autocomplete="off" enterkeyhint="search"
+                   (input)="sucheGetippt(suchfeld.value)">
+            <button type="button" class="leeren" *ngIf="filter.suche" aria-label="Suchtext löschen"
+                    (click)="sucheLeeren()">
+                <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+        </div>
+        <!-- Am Handy, wenn die Leiste klebt: Thema, Stil und „genutzt“ hinter einem Knopf -->
+        <button type="button" class="chip filter-knopf" *ngIf="istMobil && klebt"
+                [attr.aria-expanded]="filterOffen" aria-controls="album-filter"
+                (click)="filterUmschalten()">
+            <mat-icon aria-hidden="true">tune</mat-icon>Filter<span *ngIf="gesetzteFilter" class="filter-zahl"> ({{ gesetzteFilter }})</span>
+        </button>
+    </div>
+
+    <div class="filter-zeile" id="album-filter" [hidden]="filterEingeklappt">
+        <label class="feld">
+            <span class="feld-name">Thema</span>
+            <select [value]="filter.thema ?? ''" (change)="themaGewaehlt($any($event.target).value)">
+                <option value="">Alle</option>
+                <option *ngFor="let thema of themen" [value]="thema.wert" [selected]="thema.wert === filter.thema">{{ thema.name }} ({{ thema.anzahl }})</option>
+            </select>
+        </label>
+        <label class="feld">
+            <span class="feld-name">Stil</span>
+            <select [value]="filter.stil ?? ''" (change)="stilGewaehlt($any($event.target).value)">
+                <option value="">Alle</option>
+                <option *ngFor="let stil of stile" [value]="stil.wert" [selected]="stil.wert === filter.stil">{{ stil.name }} ({{ stil.anzahl }})</option>
+            </select>
+        </label>
+        <button type="button" class="chip" [attr.aria-pressed]="filter.nurGenutzt" (click)="genutztUmschalten()">
+            <mat-icon aria-hidden="true">check</mat-icon>genutzt
+        </button>
+    </div>
+
+    <div class="treffer">
+        <span aria-live="polite" data-testid="treffer">{{ trefferText }}</span>
+        <button type="button" class="textknopf" *ngIf="aktiv" (click)="zuruecksetzen()">Filter zurücksetzen</button>
+    </div>
+</div>
+
+<!-- Nichts gefunden: sagen, was hilft, und zuruecksetzen anbieten -->
+<div class="nichts" *ngIf="aktiv && !treffer" data-testid="nichts-gefunden">
+    <p class="nichts-titel">Nichts gefunden<ng-container *ngIf="filter.suche.trim()"> zu „{{ filter.suche.trim() }}“</ng-container>.</p>
+    <p>Versuch ein anderes Wort oder nimm einen Filter raus.</p>
+    <button type="button" class="knopf-umriss" (click)="zuruecksetzen()">Filter zurücksetzen</button>
+</div>
+
+<!-- Wenige Beitraege: ohne Abschnitte untereinander -->
+<ul class="raster raster--flach" *ngIf="!mitAbschnitten && flach.length">
+    <ng-container *ngFor="let eintrag of flach; trackBy: nachId">
+        <ng-container *ngTemplateOutlet="platz; context: { $implicit: eintrag }"></ng-container>
+    </ng-container>
+</ul>
+
+<!-- Abschnitte je Thema; zugeklappt zeichnen sie keine Karten -->
+<section class="abschnitt" *ngFor="let abschnitt of liste; let i = index; trackBy: nachSchluessel"
+         [attr.data-thema]="abschnitt.thema.schluessel">
+    <h2 class="abschnitt-kopf">
+        <button type="button" class="abschnitt-knopf"
+                [attr.aria-expanded]="offen(abschnitt, i)"
+                [attr.aria-controls]="'album-' + abschnitt.thema.schluessel"
+                (click)="umschalten(abschnitt, i)">
+            <span class="abschnitt-motiv" aria-hidden="true">
+                <img *ngIf="abschnitt.thema.motiv as motiv" [src]="motiv" alt="" width="32" height="32">
+            </span>
+            <span class="abschnitt-name">{{ abschnitt.thema.name }}</span>
+            <mat-icon class="abschnitt-pfeil" aria-hidden="true">expand_more</mat-icon>
+            <span class="abschnitt-stand">{{ stand(abschnitt) }}</span>
+            <span class="abschnitt-balken balken" aria-hidden="true"><i [style.width.%]="prozent(abschnitt)"></i></span>
+        </button>
+    </h2>
+    <div class="abschnitt-inhalt" [id]="'album-' + abschnitt.thema.schluessel" [hidden]="!offen(abschnitt, i)">
+        <ng-container *ngIf="offen(abschnitt, i)">
+            <ul class="raster">
+                <ng-container *ngFor="let eintrag of sichtbare(abschnitt); trackBy: nachId">
+                    <ng-container *ngTemplateOutlet="platz; context: { $implicit: eintrag }"></ng-container>
+                </ng-container>
+            </ul>
+            <div class="mehr-zeigen" *ngIf="sichtbare(abschnitt).length < abschnitt.eintraege.length">
+                <button type="button" class="knopf-umriss" (click)="alleZeigen(abschnitt)">
+                    Alle {{ abschnitt.eintraege.length }} zu {{ abschnitt.thema.name }} zeigen
+                </button>
+            </div>
+        </ng-container>
+    </div>
+</section>
+
+<!-- Ein Platz im Album: die Karte, bei Nutzung mit gruener Lasche (die Zahl steht auch in der Karte) -->
+<ng-template #platz let-eintrag>
+    <li class="platz" tabindex="-1" [class.platz--genutzt]="eintrag.karte.nutzung" [attr.data-id]="eintrag.karte.id">
+        <span class="lasche" *ngIf="eintrag.karte.nutzung" aria-hidden="true">🌱 {{ eintrag.karte.nutzung }}× genutzt</span>
+        <app-beitragskarte [daten]="eintrag.karte" variante="voll" [eigenesAlbum]="true"
+                           [abstimmenSichtbar]="false"
+                           (aendern)="aendern.emit($event)" (loeschen)="loeschenAngetippt($event)">
+        </app-beitragskarte>
+    </li>
+</ng-template>

@@ -16,7 +16,7 @@ import type { BeitragAnsicht } from '../services/content.service';
  * Fangkorb einen Einwurf mit Saetzen und Verknuepfungen. Die Adapter unten bringen
  * alle drei auf diese eine Form; die Karte kennt keine der Quellen.
  */
-export type KartenVariante = 'voll' | 'kompakt' | 'einwurf' | 'kopf';
+export type KartenVariante = 'voll' | 'einwurf' | 'kopf';
 
 /**
  * Was eine Einwurf-Karte anbietet: der eine Primaerknopf im Fuss und die

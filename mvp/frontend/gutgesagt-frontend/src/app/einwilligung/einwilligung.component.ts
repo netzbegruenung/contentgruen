@@ -1,19 +1,22 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatCheckbox, MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
   EINWILLIGUNG_PFAD,
+  beitragenFrei,
+  nutzungsbedingungenFehlen,
   wortlautDatum,
   wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { EINE_SEITE_TEXTE } from './einwilligung-texte';
 import { LEGAL_ENTITY } from '../shared/legal-entity';
 import { PunkteEinwilligungComponent } from '../shared/punkte-einwilligung/punkte-einwilligung.component';
 import { HILFE_PARAM } from '../help-dialog/help-dialog.component';
@@ -44,6 +47,12 @@ type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fe
  * hierher (Art9EinwilligungService.starten), spaeter das Profilmenue; wer
  * eingewilligt hat, sieht hier den Stand und kann widerrufen.
  *
+ * Fehlt die Zustimmung zu den Nutzungsbedingungen (neue Konten, Bestandskonten einmal),
+ * fragt die Seite beides zusammen: zwei getrennte, nicht vorbelegte Haekchen, die
+ * Nutzungsbedingungen als Pflicht, die Einwilligung freiwillig; "Weiter" geht mit den
+ * Nutzungsbedingungen allein (Entscheidung Maintainer, 20.11.2026). Wer schon
+ * eingewilligt hat, sieht nur das Haekchen der Nutzungsbedingungen.
+ *
  * Den Wortlaut liefert das Backend (domain/art9_einwilligung.py), damit er an einer
  * Stelle steht; mitgeschickt wird seine Kennung, gespeichert werden sie und der
  * Zeitpunkt.
@@ -70,6 +79,12 @@ export class EinwilligungComponent implements OnInit {
   readonly verein = LEGAL_ENTITY.NAME;
   stand?: Art9EinwilligungStand;
   angehakt = false;
+  /** Häkchen der Nutzungsbedingungen (nur wenn sie fehlen). */
+  nbAngehakt = false;
+  /** „Weiter“ ohne das Häkchen der Nutzungsbedingungen: Fehlermeldung daran. */
+  nbFehler = false;
+  readonly texte = EINE_SEITE_TEXTE;
+  @ViewChild('nbHaekchen') private nbHaekchen?: MatCheckbox;
 
   constructor(
     private einwilligung: Art9EinwilligungService,
@@ -98,6 +113,11 @@ export class EinwilligungComponent implements OnInit {
     return !!s && !s.eingewilligt && !!s.wortlaut && !s.widerrufen_am;
   }
 
+  /** Die Seite fragt die Nutzungsbedingungen mit (sie fehlen in der App). */
+  get nbNoetig(): boolean {
+    return nutzungsbedingungenFehlen(this.stand);
+  }
+
   /** Beim Einwilligen kam 400: Der Wortlaut hat sich seit dem Laden geaendert. */
   wortlautGeaendert = false;
 
@@ -113,7 +133,7 @@ export class EinwilligungComponent implements OnInit {
   @HostListener('document:visibilitychange')
   beiSichtbarkeit(): void {
     if (document.visibilityState !== 'visible') return;
-    if (this.zustand === 'eingewilligt' || (this.zustand === 'frage' && !this.angehakt)) {
+    if (this.zustand === 'eingewilligt' || (this.zustand === 'frage' && !this.angehakt && !this.nbAngehakt)) {
       this.laden();
     }
   }
@@ -124,14 +144,73 @@ export class EinwilligungComponent implements OnInit {
       next: (stand) => {
         this.stand = stand;
         this.angehakt = false;
-        this.zustand = stand.eingewilligt ? 'eingewilligt' : 'frage';
+        this.nbAngehakt = false;
+        this.nbFehler = false;
+        this.zustand = beitragenFrei(stand) ? 'eingewilligt' : 'frage';
       },
       error: () => (this.zustand = 'fehler'),
     });
   }
 
-  einwilligen(): void {
-    if (!this.stand || !this.angehakt || this.zustand === 'sendet') {
+  /** Absenden des Formulars: mit Nutzungsbedingungen „Weiter“, sonst „Einwilligen und weiter“. */
+  absenden(): void {
+    if (this.nbNoetig) {
+      this.weiterMitNutzungsbedingungen();
+    } else {
+      this.einwilligen();
+    }
+  }
+
+  /** Das Häkchen der Nutzungsbedingungen wurde gesetzt oder entfernt. */
+  nbGeaendert(): void {
+    if (this.nbAngehakt) this.nbFehler = false;
+  }
+
+  /**
+   * „Weiter“ auf der gemeinsamen Seite: erst die Nutzungsbedingungen, dann, wenn angehakt,
+   * die Einwilligung. Ohne das Häkchen der Nutzungsbedingungen eine Fehlermeldung daran,
+   * und der Fokus geht auf das Häkchen (WCAG 3.3.1). Ohne Häkchen der Einwilligung merkt
+   * sich das Konto „ohne Einwilligung weiter“ wie bisher (B2).
+   */
+  private weiterMitNutzungsbedingungen(): void {
+    const stand = this.stand;
+    if (!stand?.nutzungsbedingungen || this.zustand === 'sendet') {
+      return;
+    }
+    if (!this.nbAngehakt) {
+      this.nbFehler = true;
+      this.nbHaekchen?.focus();
+      return;
+    }
+    const schonEingewilligt = stand.eingewilligt;
+    const einwilligen = !schonEingewilligt && this.angehakt;
+    this.zustand = 'sendet';
+    this.einwilligung
+      .nutzungsbedingungenZustimmen(stand.nutzungsbedingungen.aktueller_stand.kennung, schonEingewilligt)
+      .subscribe({
+        next: () => {
+          if (einwilligen) {
+            this.einwilligen(true);
+          } else if (schonEingewilligt) {
+            this.weiter();
+          } else {
+            this.ohneEinwilligung();
+          }
+        },
+        error: (fehler) => {
+          if (fehler?.status === 400) {
+            // Der gezeigte Stand gilt nicht mehr (etwa ein Tab von gestern): neu laden.
+            this.wortlautGeaendert = true;
+            this.laden();
+            return;
+          }
+          this.zustand = 'fehler';
+        },
+      });
+  }
+
+  einwilligen(nachNutzungsbedingungen = false): void {
+    if (!this.stand || !this.angehakt || (this.zustand === 'sendet' && !nachNutzungsbedingungen)) {
       return;
     }
     this.zustand = 'sendet';

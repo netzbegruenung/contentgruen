@@ -54,3 +54,10 @@ def test_pruefen_weist_vier_themen_ab():
 def test_pruefen_weist_freie_schlagworte_ab():
     with pytest.raises(ThemaUngueltig):
         themen_pruefen(["heizungsgesetz"])
+
+
+def test_jedes_thema_hat_ein_motiv():
+    # Das Album in "Meine Beitraege" zeigt es neben dem Namen; ob die Datei unter
+    # public/ liegt, prueft scripts/tests/test_themen_motive.py.
+    for thema in THEMEN:
+        assert thema.motiv == f"themen/{thema.schluessel}.svg", thema.schluessel

@@ -89,10 +89,18 @@ ob sie ganz entfällt, ist offen (Entscheidung Maintainer, 02.11.2026). Seit #52
 Zustimmung zu geänderten Bedingungen ebenfalls über den CC0-Hinweis ein; die Pflichtaktion nennt
 er nur noch als Möglichkeit.
 
+**Nachtrag (0.9.8, #731, Wortlaut freigegeben vom Maintainer, 20.11.2026):** Seit dem Stand vom
+20. November 2026 stimmt man den Nutzungsbedingungen mit einem eigenen Häkchen auf `/einwilligung`
+zu, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu (NB §2 und §10); die App
+speichert Zeitpunkt und Stand. Das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4
+frei. Die Keycloak-Pflichtaktion wird mit 0.9.8 abgeschaltet (Entscheidung Maintainer,
+20.11.2026). Die Absätze oben und unter „Offen“ zum CC0-Hinweis als Weg der Zustimmung und zum
+offenen Wegfall der Pflichtaktion gelten bis dahin.
+
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
 unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter.“ (seit #415;
-vorher „bestätigst die Nutzungsbedingungen“) Keine
+vorher „bestätigst die Nutzungsbedingungen“; seit 0.9.8 „…unter CC0; es gelten die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“, Kennungen `2026-11-20-formular` und `-satz`, `docs/CC0_HINWEIS_WORTLAUTE.md`) Keine
 Checkbox; die bewusste Handlung ist das Absenden. Beim Satz, der beim Tippen gespeichert wird,
 ist die eigene Fassung so gewollt (Entscheidung 29.10.2026 in #439). Dass die Freigabe nicht
 zurückgenommen werden kann, steht in den Nutzungsbedingungen, nicht im Hinweis (ebenfalls
@@ -116,7 +124,8 @@ Unsere Einschätzung, nicht geprüft: Das trägt die Einbeziehung (§ 305 Abs. 2
 Hinweis bei Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung.
 Ob das trägt, klärt #296. Wer nie etwas absendet, hat nicht zugestimmt; zum Lesen und Suchen
 braucht es kein Konto (NB §2). Wer angemeldet nur bewertet, sieht den Hinweis aber nie und hat
-ebenfalls nicht zugestimmt; das deckt bis jetzt nur die Pflichtaktion aus #429 ab.
+ebenfalls nicht zugestimmt; das deckte bis 0.9.8 nur die Pflichtaktion aus #429 ab, seitdem das
+Häkchen der App.
 
 **Nachweis:** Jeder Wortlaut hat eine Kennung; sie wird mit jedem neuen Beitrag (Qdrant-Payload),
 Satz und Einwurf (PostgreSQL, `cc0_wortlaut`) gespeichert (Entscheidung 29.10.2026 in #439).
@@ -141,13 +150,14 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
   Zu #521 entschieden (Maintainer, 03.11.2026), nicht Teil von #296: Zustimmung durch Absenden
   unter dem CC0-Hinweis bleibt so (§10), §5 behält die Bedingung „nicht erkennbar ohne Erlaubnis
   der Berechtigten“ und sperrt nach Prüfung, §4 nennt § 31a UrhG nicht.
-- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
-  (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
+- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): **entschieden, entfällt mit 0.9.8**
+  (Entscheidung Maintainer, 20.11.2026, #731; vorher: bleibt vorerst, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.
-  Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr. Die
+  Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr (bis 0.9.8; seitdem
+  das Häkchen der App, Nachtrag oben). Die
   Art.-9-Einwilligung (D-N15) hängt seit #489 nicht mehr daran: Die App fragt selbst, mit
   eigenem Häkchen; ihr Wortlaut ist vorläufig und offen für #296 (P11).
-  Der Zustimmungstext der Pflichtaktion selbst ist vorläufig und offen für #296 (P12, #491).
+  Der Zustimmungstext der Pflichtaktion (P12, #491) entfällt mit ihr.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.
@@ -241,7 +251,8 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
 2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
    steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Die Zustimmung
-   beim Anmelden (#429) bleibt vorerst daneben, Wegfall offen. Sie berührt den
+   beim Anmelden (#429) wird mit 0.9.8 abgeschaltet (Entscheidung Maintainer, 20.11.2026);
+   seitdem stimmt man per Häkchen in der App zu (#731). Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 

@@ -27,6 +27,8 @@ CC0_WORTLAUTE = frozenset(
         "2026-10-29-satz",
         "2026-11-02-formular",
         "2026-11-02-satz",
+        "2026-11-20-formular",
+        "2026-11-20-satz",
     }
 )
 

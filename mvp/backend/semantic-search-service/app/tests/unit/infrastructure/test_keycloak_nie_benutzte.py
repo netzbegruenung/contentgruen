@@ -213,3 +213,28 @@ def test_liest_alle_konten_mit_pflichtaktionen():
     # Kein Filter emailVerified mehr: Auch bestaetigte Konten koennen faellig sein.
     assert "emailVerified" not in liste.url.params
     assert liste.url.params["briefRepresentation"] == "false"
+
+
+def test_seit_0_9_8_ohne_nutzungsbedingungen_am_konto():
+    """
+    Konten aus Einladungen ab 0.9.8 tragen nur UPDATE_PASSWORD (PFLICHTAKTIONEN leer):
+    Link nie geoeffnet wird geloescht. Ein unbestaetigtes Konto ganz ohne Pflichtaktion
+    stammt aus keiner Einladung und bleibt; ebenso ein Beta-Zugang ohne Pflichtaktion.
+    """
+    keycloak = Keycloak(
+        [
+            _konto("nie-geoeffnet", requiredActions=["UPDATE_PASSWORD"]),
+            # Uebergangszeit: Keycloak haengt die noch eingeschaltete Default action an.
+            _konto(
+                "uebergang",
+                requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
+            ),
+            _konto("ohne-aktion", requiredActions=[]),
+            _konto("beta-neu", emailVerified=True, requiredActions=[]),
+        ]
+    )
+
+    anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
+
+    assert anzahl == 2
+    assert keycloak.geloescht() == ["nie-geoeffnet", "uebergang"]

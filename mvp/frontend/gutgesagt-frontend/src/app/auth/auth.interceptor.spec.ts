@@ -147,6 +147,33 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
+  it('nennt bei fehlender Zustimmung die Nutzungsbedingungen, wenn die Einwilligung gilt', fakeAsync(() => {
+    (router as any).url = '/einwerfen';
+    TestBed.inject(Art9EinwilligungZustand).nbSetzen(true);
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'nutzungsbedingungen_fehlen' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).toHaveBeenCalledWith(jasmine.stringContaining('Nutzungsbedingungen'), 'Zustimmen', jasmine.any(Object));
+    expect(TestBed.inject(Art9EinwilligungZustand).nbFehlt).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
+  it('fehlt beides, bleibt es beim Hinweis auf die Einwilligung (dieselbe Seite fragt beides)', fakeAsync(() => {
+    (router as any).url = '/einwerfen';
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'nutzungsbedingungen_fehlen' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).toHaveBeenCalledWith(jasmine.stringContaining('Einwilligung'), 'Einwilligen', jasmine.any(Object));
+  }));
+
   it('oeffnet den Hinweis nach dem Fehlerzweig des Aufrufers, damit dessen Hinweis ihn nicht ersetzt', fakeAsync(() => {
     const reihenfolge: string[] = [];
     snackBar.open.and.callFake(((text: string) => {

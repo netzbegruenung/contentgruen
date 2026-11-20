@@ -100,7 +100,7 @@ def test_nichts_aus_public_ein_jahr(konfiguration):
 @pytest.mark.parametrize(
     "pfad",
     [
-        "/profilbild-2026.jpg",
+        "/profilbild-2026-11.jpg",
         "/avatars/fuchs.png",
         "/marke/wegweiser.svg",
         "/fonts/roboto-latin.woff2",

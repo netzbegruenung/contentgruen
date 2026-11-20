@@ -173,12 +173,16 @@ Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitra
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
 **CC0-Hinweis**:
-Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu; beide sind verlinkt. Über ihn sind die Nutzungsbedingungen einbezogen (#415), nicht durch bloße Nutzung. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0; die Nutzungsbedingungen gelten, beide sind verlinkt. Bis zum Stand der Nutzungsbedingungen vom 19. November 2026 waren sie über ihn einbezogen (#415); seit dem Stand vom 20. November 2026 stimmt man ihnen mit dem Häkchen auf `/einwilligung` zu (NB §2). Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem nächsten Absenden unter dem CC0-Hinweis, NB §10); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem Häkchen auf `/einwilligung`, NB §10; bis zum Stand vom 19. November 2026 mit dem nächsten Absenden unter dem CC0-Hinweis); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
+
+**Zustimmung zu den Nutzungsbedingungen**:
+Die Annahme der Nutzungsbedingungen durch eine angemeldete Person, in der App mit einem eigenen, nicht vorbelegten Häkchen auf `/einwilligung`, zusammen mit, aber getrennt von der Art.-9-Einwilligung (Entscheidung Maintainer, 20.11.2026). Sie ist Pflicht, um mit Konto beizutragen und zu bewerten, und ein Vertrag (Art. 6 Abs. 1 lit. b DSGVO), keine Einwilligung. Gespeichert werden Person, Zeitpunkt und Stand der Nutzungsbedingungen (`nutzungsbedingungen_zustimmungen`). Bis 0.9.8 fragte die Keycloak-Pflichtaktion „Terms and Conditions“; sie entfällt. Ablauf: `docs/ART9_EINWILLIGUNG.md`, „Nutzungsbedingungen auf derselben Seite“.
+_Avoid_: NB-Einwilligung, Consent, Alle annehmen
 
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht oder nur in einfachen Fällen erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
@@ -308,8 +312,12 @@ Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage g
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
-Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht.
+Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht. Jedes Thema hat ein Motiv, ein kleines Bild neben seinem Namen (Fluent Emoji wie bei den Meilensteinen, bei Europa eine eigene Zeichnung der Europaflagge); es ist rein dekorativ, der Name steht immer daneben.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
+
+**Album**:
+Die eigenen Beiträge in „Meine Beiträge“, als volle Karten, ab vier Beiträgen in einklappbaren Abschnitten je Thema der Aussage, auf die sie antworten, meistgenutzte zuerst; Beiträge ohne Thema stehen zuletzt unter „Ohne Thema“; bis drei Beiträge stehen die Karten ohne Abschnitte untereinander. Ein Beitrag, dessen Aussage mehrere Themen hat, steht in jedem dieser Abschnitte. Oben ein Deckel mit der Zahl der Beiträge, ihrer Nutzung und der Themen; ohne jede Nutzung steht dort statt „0× genutzt“ der nächste Meilenstein, ohne Meilensteine (Punkte aus oder keine Einwilligung) groß die Zahl der Beiträge und Themen. Ab sieben Beiträgen gibt es eine Suche nur über die eigenen Beiträge.
+_Avoid_: Sammlung, Galerie, Profil
 
 **Zuordnungsart**:
 Wie ein Thema an eine Aussage kam: von Hand durch eine Person oder später durch eine Automatik. Wer zugeordnet hat und wann, wird nicht gespeichert.
@@ -449,7 +457,7 @@ Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Br
 _Avoid_: Session-ID
 
 **Meine Beiträge**:
-Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
+Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen als Album, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:

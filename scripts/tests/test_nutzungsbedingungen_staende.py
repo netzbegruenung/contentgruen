@@ -47,3 +47,23 @@ def test_jeder_ordner_ist_nach_seinem_stand_benannt_und_nennt_aenderungen(ordner
 
     assert uebersicht.stand_als_ordner(stand.name) == ordner.name
     assert stand.aenderungen
+
+
+DOMAIN = (
+    WURZEL
+    / "mvp/backend/semantic-search-service/app/domain/nutzungsbedingungen.py"
+)
+
+
+def test_die_app_laesst_dem_stand_der_seite_zustimmen():
+    """
+    Die App speichert zur Zustimmung den Stand (domain/nutzungsbedingungen.py). Traegt
+    die Seite einen anderen, stimmten alle einem Stand zu, den sie nicht sehen.
+    """
+    quelle = DOMAIN.read_text()
+    aktuell = re.search(r'^AKTUELLER_STAND = "([^"]+)"', quelle, re.M)
+    assert aktuell, "AKTUELLER_STAND fehlt"
+    stand = _stand_der_seite()
+
+    assert aktuell.group(1) == uebersicht.stand_als_ordner(stand)
+    assert f'"{aktuell.group(1)}": "{stand}"' in quelle

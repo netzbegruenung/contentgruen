@@ -98,6 +98,17 @@ def eingewilligt(sitzung):
     if stand.status_code == 404:
         return
     assert stand.status_code == 200
+    # Vorher die Nutzungsbedingungen: Ohne sie sperrt der Dienst wie ohne Einwilligung.
+    nb = stand.json().get("nutzungsbedingungen")
+    if nb is not None:
+        assert (
+            sitzung.post(
+                f"{BFF_URL}/api/v1/nutzungsbedingungen",
+                json={"stand": nb["aktueller_stand"]["kennung"]},
+                timeout=10,
+            ).status_code
+            == 204
+        )
     kennung = stand.json()["aktueller_wortlaut"]["kennung"]
     assert (
         sitzung.post(basis, json={"wortlaut": kennung}, timeout=10).status_code == 204

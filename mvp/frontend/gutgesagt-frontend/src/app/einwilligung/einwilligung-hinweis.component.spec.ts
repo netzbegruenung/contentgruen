@@ -65,6 +65,17 @@ describe('EinwilligungHinweisComponent', () => {
     expect(kasten()?.querySelector('button')?.textContent?.trim()).toBe('Einwilligen');
   });
 
+  it('nennt die Nutzungsbedingungen, wenn nicht die Einwilligung, sondern die Zustimmung fehlt', () => {
+    erstellen();
+    zustand.setzen('fehlt');
+    zustand.nbSetzen(true);
+    fixture.detectChanges();
+
+    expect(kasten()?.textContent).toContain('Zustimmung zu den Nutzungsbedingungen');
+    expect(kasten()?.textContent).not.toContain('deine Einwilligung');
+    expect(kasten()?.querySelector('button')?.textContent?.trim()).toBe('Zustimmen');
+  });
+
   it('meldet sich an, damit der Interceptor keinen zweiten Hinweis zeigt, und beim Zerstoeren wieder ab', () => {
     erstellen();
     expect(zustand.hinweisDa).toBeTrue();

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { GetContributionsOfUserResponse } from './dtos/contributionDtos';
+import { ContentResult, GetContributionsOfUserResponse } from './dtos/contributionDtos';
 import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 
 /** Eine Herkunft in der Aenderung: Adresse oder Fundstelle, dazu die Notiz dieses Beitrags. */
@@ -24,6 +25,15 @@ export interface BeitragAenderung {
   references: HerkunftEingabe[];
 }
 
+/** So viele Beitraege je Abruf; das Hoechste, was der Endpunkt erlaubt (page_size <= 100). */
+export const ALLE_SEITENGROESSE = 100;
+
+/** Alle eigenen Beitraege auf einmal, fuer das Album. */
+export interface AlleMeineBeitraege {
+  beitraege: ContentResult[];
+  gesamt: number;
+}
+
 /** "Meine Beiträge": die eigenen Beiträge der angemeldeten Person, seitenweise. */
 @Injectable({
   providedIn: 'root'
@@ -37,6 +47,29 @@ export class MeineBeitraegeService {
     const url = `${this.apiUrl}?page=${page}&page_size=${pageSize}`;
 
     return this.http.get<GetContributionsOfUserResponse>(url);
+  }
+
+  /**
+   * Alle eigenen Beitraege fuer das Album (Variante A, 20.11.): Suche und Filter laufen
+   * im Browser ueber die eigenen Beitraege, Abschnitte und Zahlen brauchen alle. Die
+   * erste Seite sagt, wie viele es sind; die uebrigen kommen danach gleichzeitig. Bei
+   * 244 Beitraegen (Redaktion) sind das drei Abrufe.
+   */
+  alleMeineBeitraege(): Observable<AlleMeineBeitraege> {
+    return this.meineBeitraege(1, ALLE_SEITENGROESSE).pipe(
+      switchMap((erste) => {
+        const seiten = Math.ceil(erste.total_records_count / ALLE_SEITENGROESSE);
+        const weitere = Array.from({ length: Math.max(0, seiten - 1) }, (_, i) =>
+          this.meineBeitraege(i + 2, ALLE_SEITENGROESSE),
+        );
+        return (weitere.length ? forkJoin(weitere) : of([])).pipe(
+          map((rest) => ({
+            beitraege: [erste, ...rest].flatMap((seite) => seite.results),
+            gesamt: erste.total_records_count,
+          })),
+        );
+      }),
+    );
   }
 
   /**

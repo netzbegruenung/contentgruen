@@ -78,7 +78,7 @@ BEITRAGSTYPEN = ("commentary", "generic_text", "post", "image")
 # Kennt ein aelterer Dienst die Kennung noch nicht, legt das Skript ohne Kennung
 # an, wie der Dienst es fuer eine aeltere App im Browser-Cache annimmt, und
 # sagt das (``importieren``).
-CC0_WORTLAUT = "2026-11-02-formular"
+CC0_WORTLAUT = "2026-11-20-formular"
 CC0_UNBEKANNT = "Unbekannter Wortlaut des CC0-Hinweises"
 
 
@@ -435,6 +435,8 @@ def liste_lesen(pfad: Path) -> Tuple[List[ZuEntfernen], List[Fehler]]:
 SITZUNGS_COOKIE = "GutGesagtAuthCookie"
 # Antworttext des Suchdienstes ohne Art.-9-Einwilligung (#489, dependencies.py).
 ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
+# Dasselbe ohne Zustimmung zu den Nutzungsbedingungen in der App (dependencies.py).
+NUTZUNGSBEDINGUNGEN_FEHLEN = "nutzungsbedingungen_fehlen"
 # Rate-Limit des Dienstes fuer addCommentary: 10 je Minute, 100 je Stunde
 # (main.py, middleware/rate_limit.py). Nach einer Ablehnung eine Minute warten.
 WARTEN_NACH_LIMIT = 61
@@ -825,10 +827,14 @@ class BffBestand:
         try:
             antwort = self._anfrage("POST", pfad, daten)
         except ApiFehler as fehler:
-            if fehler.status == 403 and ART9_EINWILLIGUNG_FEHLT in str(fehler):
+            if fehler.status == 403 and (
+                ART9_EINWILLIGUNG_FEHLT in str(fehler)
+                or NUTZUNGSBEDINGUNGEN_FEHLEN in str(fehler)
+            ):
                 raise ApiFehler(
                     403,
-                    "Das Konto hat noch nicht in die Art.-9-Einwilligung eingewilligt: "
+                    "Das Konto hat den Nutzungsbedingungen noch nicht zugestimmt oder "
+                    "noch nicht in die Art.-9-Einwilligung eingewilligt: "
                     "einmal in der App anmelden und unter /einwilligung einwilligen "
                     "(docs/ART9_EINWILLIGUNG.md)",
                 ) from None
