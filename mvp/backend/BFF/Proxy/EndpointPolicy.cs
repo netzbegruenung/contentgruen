@@ -84,7 +84,10 @@ public static class EndpointPolicy
     {
         "/api/v1/seeding",
         "/api/v1/test",
-        "/metrics"
+        "/metrics",
+        // Linkvorschau (#360): nur fuer den Frontend-nginx, der den Suchdienst im internen
+        // Netz direkt aufruft. Von aussen gebraucht wird sie nicht.
+        "/api/v1/linkvorschau"
     };
 
     /// <summary>

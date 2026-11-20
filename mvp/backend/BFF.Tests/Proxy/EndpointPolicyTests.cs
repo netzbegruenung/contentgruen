@@ -63,6 +63,8 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/test/headers")]
     [InlineData("/metrics")]                     // Betriebskennzahlen des Suchdienstes (#420)
     [InlineData("/METRICS")]
+    [InlineData("/api/v1/linkvorschau/beitrag/33333333-3333-3333-3333-333333333333")]  // #360
+    [InlineData("/api/v1/linkvorschau/ergebnis")]
     public void IsBlocked_TrueForInternalEndpoints(string path)
     {
         Assert.True(EndpointPolicy.IsBlocked(path));
@@ -74,6 +76,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/health")]
     [InlineData("/api/v1/metrics/getMetrics")]   // fachliche Kennzahlen, nicht /metrics
     [InlineData("/metricsfoo")]                  // Segmentgrenze
+    [InlineData("/api/v1/content/beitrag/33333333-3333-3333-3333-333333333333")]  // die Ansicht selbst
     public void IsBlocked_FalseForRegularEndpoints(string path)
     {
         Assert.False(EndpointPolicy.IsBlocked(path));

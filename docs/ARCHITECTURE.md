@@ -141,11 +141,12 @@ referrer, and no line for searches or the results page (#275, see
 Link previews (#360): for `/beitrag/<id>` and `/result` both configurations serve
 `index.html` with SSI. An internal subrequest goes straight to
 `gutgesagt-semantic-search:8000/api/v1/linkvorschau/...` on the Docker network (resolved at
-request time via Docker's DNS, 1 s connect, 2 s read), and the returned `og:title`,
-`og:description` and `og:url` replace the block `linkvorschau_allgemein` in `index.html`.
-On 204 (gesperrt, gelöscht, unknown), any error or timeout the general block stays. The search
-text travels only in the header `X-Suchtext`, not in a URL, and subrequests are not logged.
-Every other path gets `index.html` unchanged.
+request time via Docker's DNS; 1 s each for lookup, connect and read), and the returned
+`og:title`, `og:description` and `og:url` replace the block `linkvorschau_allgemein` in
+`index.html`. On 204 (gesperrt, gelöscht, unknown), any status other than 200, an error or a
+timeout the general block stays. The search text travels only in the header `X-Suchtext`, not
+in a URL, and subrequests are not logged. The BFF blocks `/api/v1/linkvorschau` at the edge
+(`EndpointPolicy.Blocked`). Every other path gets `index.html` unchanged.
 
 ### Local Development
 - **No nginx** - Direct access to services

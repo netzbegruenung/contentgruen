@@ -3,7 +3,7 @@ Linkvorschau fuer geteilte Links (#360): ein Stueck HTML mit og-Angaben fuer ind
 
 Nur fuer den nginx im Frontend-Image, der es per SSI in /beitrag/<id> und /result
 einsetzt (nginx.conf, nginx.docker.conf). Er ruft den Dienst direkt im internen Netz
-auf, nicht ueber das BFF; dort liegt der Pfad hinter der Anmeldung.
+auf, nicht ueber das BFF; dort ist der Pfad gesperrt (EndpointPolicy.Blocked, 404).
 
 200 mit dem Stueck oder 204 ohne Rumpf. Bei 204, jedem Fehler und nach Ablauf der
 Frist setzt nginx die allgemeinen Angaben aus index.html ein: Gesperrte, geloeschte

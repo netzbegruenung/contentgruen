@@ -238,6 +238,19 @@ public class AuthGatePipelineTests
         Assert.Equal(HttpStatusCode.NotFound, await Request(useKeycloak, path, authenticated));
     }
 
+    [Theory]
+    [InlineData("/api/v1/linkvorschau/ergebnis", true, true)]
+    [InlineData("/api/v1/linkvorschau/ergebnis", false, false)]
+    [InlineData("/api/v1/linkvorschau/beitrag/33333333-3333-3333-3333-333333333333", true, false)]
+    [InlineData("/API/V1/Linkvorschau/ergebnis", false, true)]
+    public async Task Linkvorschau_IstVonAussenGesperrt_AuchFuerAngemeldete(
+        string path, bool useKeycloak, bool authenticated)
+    {
+        // Nur fuer den Frontend-nginx im internen Netz (#360); am Rand 404, nicht
+        // weitergeleitet, fuer Angemeldete wie fuer Besucher.
+        Assert.Equal(HttpStatusCode.NotFound, await Request(useKeycloak, path, authenticated));
+    }
+
     /// <summary>
     /// Liest isAdmin aus /api/user-info -- ueber denselben Host und denselben Testnutzer
     /// (sub=test-user) wie die Gate-Tests oben.

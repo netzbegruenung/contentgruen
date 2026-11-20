@@ -363,7 +363,7 @@ app.include_router(
 )
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
 app.include_router(varianten_router, prefix="/api/v1/varianten", tags=["varianten"])
-# Nur fuer den nginx im Frontend-Image (#360); am BFF hinter der Anmeldung.
+# Nur fuer den nginx im Frontend-Image (#360); am BFF gesperrt (EndpointPolicy.Blocked).
 app.include_router(
     linkvorschau_router, prefix="/api/v1/linkvorschau", tags=["linkvorschau"]
 )

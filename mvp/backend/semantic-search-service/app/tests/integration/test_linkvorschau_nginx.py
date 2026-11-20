@@ -32,10 +32,35 @@ INDEX = nginx.FRONTEND / "src" / "index.html"
 SICHTBAR = "11111111-1111-4111-8111-111111111111"
 NICHT_DA = "22222222-2222-4222-8222-222222222222"
 KAPUTT = "33333333-3333-4333-8333-333333333333"
+UNBEKANNT = "44444444-4444-4444-8444-444444444444"
+# Status mit Rumpf, die der Suchdienst nicht schickt, die aber nie im <head> landen duerfen
+MIT_RUMPF = {
+    "55555555-5555-4555-8555-555555555401": "401",
+    "55555555-5555-4555-8555-555555555406": "406",
+    "55555555-5555-4555-8555-555555555413": "413",
+    "55555555-5555-4555-8555-555555555501": "501",
+    "55555555-5555-4555-8555-555555555302": "302",
+}
 ALLGEMEIN = '<meta property="og:title" content="Gut gesagt – Nie wieder sprachlos">'
 SPEZIFISCH = '<meta property="og:title" content="Erfundener Beitrag">'
 SUCHTEXT = "Waermepumpe-im-Altbau-360"
 KONFIGURATIONEN = ["nginx.conf", "nginx.docker.conf"]
+
+
+def _mit_rumpf(beitrag: str, status: str) -> str:
+    antwort = (
+        "302 http://example.invalid/RUMPF-302"
+        if status == "302"
+        else f"{status} 'RUMPF-{status}'"
+    )
+    return (
+        f"    location = /api/v1/linkvorschau/beitrag/{beitrag} {{\n"
+        f"        return {antwort};\n"
+        "    }\n"
+    )
+
+
+MIT_RUMPF_LOCATIONS = "".join(_mit_rumpf(b, s) for b, s in MIT_RUMPF.items())
 
 SUCHDIENST = f"""
 server {{
@@ -53,6 +78,7 @@ server {{
     location = /api/v1/linkvorschau/ergebnis {{
         return 200 '<meta name="echo" content="$request_uri|$http_x_suchtext|$http_cookie">\\n';
     }}
+{MIT_RUMPF_LOCATIONS}
     location / {{
         return 404 'nicht gefunden';
     }}
@@ -161,15 +187,17 @@ def test_sichtbarer_beitrag_eigene_angaben(frontend):
     assert kopf["Cache-Control"] == "no-cache, no-store, must-revalidate"
 
 
-@pytest.mark.parametrize("beitrag", [NICHT_DA, KAPUTT, str(uuid.uuid4())])
+@pytest.mark.parametrize("beitrag", [NICHT_DA, KAPUTT, UNBEKANNT, *MIT_RUMPF])
 def test_ohne_vorschau_allgemeine_angaben(frontend, beitrag):
-    """204 (gesperrt, geloescht, unbekannt), Fehler oder unbekannter Pfad beim
-    Suchdienst: die allgemeinen Angaben, die Seite laedt normal."""
+    """204 (gesperrt, geloescht, unbekannt), Fehler, unbekannter Pfad oder ein anderer
+    Status mit Rumpf (401, 406, 413, 501, Umleitung) beim Suchdienst: die allgemeinen
+    Angaben, die Seite laedt normal."""
     basis, _ = frontend
     status, _, text = _holen(f"{basis}/beitrag/{beitrag}")
     assert status == 200
     assert ALLGEMEIN in text
     assert "kaputt" not in text and "nicht gefunden" not in text
+    assert "RUMPF" not in text
     assert "<!--#" not in text
     assert "<app-root>" in text
 
@@ -214,3 +242,16 @@ def test_ohne_suchdienst_allgemeine_angaben(konfiguration):
     assert status == 200
     assert ALLGEMEIN in text
     assert dauer < 5
+
+
+@pytest.mark.usefixtures("docker_noetig")
+@pytest.mark.parametrize("konfiguration", KONFIGURATIONEN)
+def test_ergebnisseite_ohne_suchdienst_allgemein_und_ohne_suchtext(konfiguration):
+    with _aufbauen(konfiguration, mit_suchdienst=False) as (basis, name):
+        status, _, text = _holen(f"{basis}/result?searchQuery={SUCHTEXT}")
+        nginx.docker("stop", name)
+        ausgabe = nginx.ausgabe(name)
+    assert status == 200
+    assert ALLGEMEIN in text
+    assert SUCHTEXT not in text
+    assert not [z for z in ausgabe if SUCHTEXT in z]
