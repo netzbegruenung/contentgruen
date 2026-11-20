@@ -10,6 +10,9 @@ test('Besucher: Suche ohne Anmeldung', async ({ page, bild }) => {
   await page.goto(`/result?searchQuery=${encodeURIComponent('Windräder töten Vögel')}`);
   expect((await suche).status()).toBe(200);
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
+  // Erst wenn alles geladen ist: Ein 401 einer Nebenabfrage (etwa der Themenliste unter der
+  // erkannten Aussage) leitete sonst danach noch auf /login um (Befund auf Test, v0.9.9).
+  await page.waitForLoadState('networkidle');
   expect(new URL(page.url()).pathname).toBe('/result');
   // Ohne Anmeldung kein Autor auf den Karten (beitragskarte: zeigtAutor)
   await expect.soft(page.locator('app-kartenliste .karte-meta', { hasText: 'Von:' })).toHaveCount(0);

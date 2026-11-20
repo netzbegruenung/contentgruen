@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../auth/auth.service';
 import { Thema } from '../../services/dtos/themenDtos';
@@ -153,22 +155,27 @@ export class AussageThemenComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
-    this.authService.userInfo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((info) => {
-      this.angemeldet = !!info?.isAuthenticated;
+    const angemeldet$ = this.authService.userInfo$.pipe(
+      map((info) => !!info?.isAuthenticated),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    );
+    angemeldet$.subscribe((angemeldet) => {
+      this.angemeldet = angemeldet;
       this.cdr.markForCheck();
     });
-    this.themenService
-      .liste()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (liste) => {
-          this.liste = liste;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.liste = [];
-          this.cdr.markForCheck();
-        },
+    // Die Liste braucht nur, wer zuordnet: Abgemeldeten antwortet das BFF auf
+    // /api/v1/statement/themen mit 401, und das fuehrte Besucher von der Ergebnisseite
+    // auf /login. Deshalb erst nach dem Anmelden laden.
+    angemeldet$
+      .pipe(
+        filter((angemeldet) => angemeldet),
+        take(1),
+        switchMap(() => this.themenService.liste().pipe(catchError(() => of([] as Thema[])))),
+      )
+      .subscribe((liste) => {
+        this.liste = liste;
+        this.cdr.markForCheck();
       });
   }
 

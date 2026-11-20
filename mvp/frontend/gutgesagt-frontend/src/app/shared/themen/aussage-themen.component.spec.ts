@@ -7,6 +7,7 @@ import { THEMEN_NICHT_GESPEICHERT } from './themen-meldung';
 import { AuthService, UserInfo } from '../../auth/auth.service';
 import { AussageMitThemenFeld } from '../../services/themen.service';
 import { environment } from '../../../environments/environment';
+import { STILLE_ABFRAGE } from '../selbst-nachladen';
 
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/themen`;
 const ZUORDNEN_URL = `${environment.baseUrl}/api/v1/statement/themen/zuordnen`;
@@ -30,9 +31,17 @@ describe('AussageThemenComponent', () => {
     fixture = TestBed.createComponent(AussageThemenComponent);
     fixture.componentRef.setInput('aussage', aussage);
     fixture.detectChanges();
-    http.expectOne(LISTE_URL).flush({ themen: [KLIMA, VERKEHR, WOHNEN] });
-    fixture.detectChanges();
+    // Abgemeldete fragen die Liste nicht ab (s. Test „fragt Abgemeldete nicht …“).
+    if (angemeldet) listeLiefern();
     return fixture.nativeElement as HTMLElement;
+  }
+
+  function listeLiefern(): void {
+    const anfrage = http.expectOne(LISTE_URL);
+    // Still: Ein 401 darf nie auf /login umleiten (Besucher auf der Ergebnisseite).
+    expect(anfrage.request.context.get(STILLE_ABFRAGE)).toBeTrue();
+    anfrage.flush({ themen: [KLIMA, VERKEHR, WOHNEN] });
+    fixture.detectChanges();
   }
 
   const marken = (e: HTMLElement) => Array.from(e.querySelectorAll('.thema-marke')).map((m) => m.textContent?.trim());
@@ -165,5 +174,25 @@ describe('AussageThemenComponent', () => {
 
     expect(umschalter(e)).toBeNull();
     expect(marken(e)).toEqual(['Klima']);
+  });
+
+  // Die Themenliste braucht nur, wer zuordnet. Das BFF antwortet Abgemeldeten auf
+  // /api/v1/statement/themen mit 401, und der AuthInterceptor fuehrte die Person dann
+  // von der Ergebnisseite auf /login (Befund auf Test, v0.9.9).
+  it('fragt Abgemeldete nicht nach der Themenliste', () => {
+    zeigen({ statement_id: 'a-1', themen: [KLIMA] }, false);
+
+    http.expectNone(LISTE_URL);
+  });
+
+  it('laedt die Themenliste nach dem Anmelden und bietet dann das Zuordnen an', () => {
+    const e = zeigen({ statement_id: 'a-1', themen: [KLIMA] }, false);
+    http.expectNone(LISTE_URL);
+
+    nutzer.next(ANGEMELDET);
+    fixture.detectChanges();
+    listeLiefern();
+
+    expect(umschalter(e)!.textContent?.trim()).toBe('Themen ändern');
   });
 });
