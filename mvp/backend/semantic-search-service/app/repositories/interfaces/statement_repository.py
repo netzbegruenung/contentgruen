@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, Iterable, List, Set
+from typing import AbstractSet, Dict, Iterable, List, Set
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -122,6 +122,16 @@ class IStatementRepository(
         """
         Visible statements the Beitrag answers (#603): those with the Beitrag among
         their reply suggestions, found through the payload field antwort_ids.
+        """
+        pass
+
+    @abstractmethod
+    async def zu_antworten(
+        self, beitrag_ids: List[uuid.UUID]
+    ) -> Dict[uuid.UUID, List[StatementDbEntry]]:
+        """
+        Like zu_antwort for many Beitraege at once (album in "Meine Beitraege"): per
+        Beitrag the visible statements that answer it; Beitraege without one are missing.
         """
         pass
 

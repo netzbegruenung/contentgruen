@@ -752,7 +752,11 @@ class TestThemenDerAussage:
 
         assert resp.status_code == 200
         assert resp.json()["themen"] == [
-            {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
+            {
+                "schluessel": "energie-heizen",
+                "name": "Energie und Heizen",
+                "motiv": "themen/energie-heizen.svg",
+            }
         ]
         assert resp.json()["verknuepft"] is True
         themen_service.ergaenzen.assert_awaited_once_with(
@@ -777,7 +781,9 @@ class TestThemenDerAussage:
 
         assert resp.status_code == 200
         # Die Antwort nennt ihre, damit das Formular sagen kann, dass die Wahl nicht galt.
-        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
+        assert resp.json()["themen"] == [
+            {"schluessel": "klima", "name": "Klima", "motiv": "themen/klima.svg"}
+        ]
         themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
 
     def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):

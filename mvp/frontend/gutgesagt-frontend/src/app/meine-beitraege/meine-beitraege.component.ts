@@ -1,22 +1,16 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { Subject } from 'rxjs';
-import { filter, takeUntil } from 'rxjs/operators';
-import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
-import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { Observable, Subject, of } from 'rxjs';
+import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlleMeineBeitraege } from '../services/meine-beitraege.service';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MEINE_TAB_PARAM } from '../services/navigation.service';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
-import { ContentResult } from '../services/dtos/contributionDtos';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
-import { AuthService } from '../auth/auth.service';
-import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
-import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
-import { BeitragSheetComponent, BeitragSheetDaten, GEAENDERT, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
-import { istAenderbar } from '../beitragskarte/beitrag-aendern-dialog.component';
-import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
+import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
+import { BeitragVerwaltenService } from '../beitragskarte/beitrag-verwalten.service';
+import { KartenDaten } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { SperrnachrichtenComponent } from './sperrnachrichten.component';
 import { MeilensteineComponent } from './meilensteine.component';
@@ -28,8 +22,9 @@ import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { beantwortenParamsJeAussage } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
-import { nachNutzung, wirkungssatz } from './wirkung';
 import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
+import { AlbumComponent } from './album/album.component';
+import { AlbumEintrag, albumEintrag, naechsterMeilenstein } from './album/album';
 
 /** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
@@ -43,10 +38,11 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
 ];
 
 /**
- * Meine Beitraege als Album: kompakte, hochkante Karten im Raster (2/3/4 Spalten, das
- * Layout regelt app-kartenliste per CSS), darueber die Statistik als eine Textzeile.
- * Ein Tipp oeffnet den Beitrag als volle Karte im Bottom Sheet, mit Aktionsleiste und
- * Herkunft; eine Suche und damit eine neue Suchaussage entsteht dabei nicht.
+ * Meine Beitraege als Album nach Thema (Variante A, Sebastian und Aila 20.11.; app-album):
+ * alle eigenen Beitraege auf einmal, als volle Karten in Abschnitten je Thema, oben der
+ * Deckel mit Zahlen und Wirkungssatz, darueber eine Suche ueber die eigenen Beitraege.
+ * Aendern und Loeschen gehen direkt an der Karte; danach laedt die Liste still nach,
+ * aufgeklappte Abschnitte bleiben offen.
  *
  * Der zweite Tab ist "Meine Einwuerfe" (app-meine-einwuerfe): was aus den eigenen
  * Einwuerfen geworden ist. Er laedt erst beim ersten Oeffnen.
@@ -56,11 +52,10 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
   standalone: true,
   imports: [
     CommonModule,
-    MatPaginator,
     MatProgressSpinnerModule,
     MatButtonModule,
     RouterLink,
-    KartenlisteComponent,
+    AlbumComponent,
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent,
     MeilensteineComponent,
@@ -70,28 +65,19 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
   templateUrl: './meine-beitraege.component.html',
   styleUrls: ['../shared/tabs.css', '../shared/aussagekarte/aussagekarten.scss', './meine-beitraege.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
-  // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
-  providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
 export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   readonly tabs = TABS;
   tab: MeineTab = 'beitraege';
   /** Ab dem ersten Oeffnen bleibt der Einwurf-Tab stehen, damit Wechseln nicht neu laedt. */
   einwuerfeGeoeffnet = false;
-  karten: KartenDaten[] = [];
-  /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
-  istMobil = false;
+  eintraege: AlbumEintrag[] = [];
   private destroy$ = new Subject<void>();
-  totalRecords = 0;
-  /** Standard-Seitengroesse; bis zu so vielen Beitraegen gibt es keinen Paginator. */
-  readonly SEITENGROESSE = 24;
-  pageSize = this.SEITENGROESSE;
-  /** Gebunden, damit der Paginator die Seite auch ueber ein Neuzeichnen hinweg haelt. */
-  pageIndex = 0;
+  /** Nur beim ersten Laden; danach laedt die Liste still nach und bleibt stehen. */
   isLoading = true;
-  totalUsageCount = 0;
-  nutzungsstatistik: UserUsageStats | null = null;
+  ladefehler = false;
+  /** Der naechste offene Meilenstein fuer den Deckel; null ohne Meilensteine. */
+  naechsterMeilenstein: Meilenstein | null = null;
   /** Ohne eigene Beitraege: die ersten unbeantworteten Aussagen aus "Hier fehlt eine Antwort" (#645). */
   unbeantworteteAussagen: UnbeantworteteAussage[] = [];
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
@@ -103,11 +89,10 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private usageTrackingService: UsageTrackingService,
-    private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private breakpointObserver: BreakpointObserver,
-    private bottomSheet: MatBottomSheet,
     private statementService: StatementService,
+    private verwalten: BeitragVerwaltenService,
+    private snackBar: MatSnackBar,
   ) { }
 
   ngOnInit() {
@@ -124,16 +109,9 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
         replaceUrl: true,
       });
     }
-    this.breakpointObserver
-      .observe('(max-width: 599px)')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((zustand) => {
-        this.istMobil = zustand.matches;
-        this.cdr.markForCheck();
-      });
-
-    this.fetchData(1, this.pageSize);
-    this.nutzungsstatistikLaden();
+    this.ladenAbonnieren();
+    this.laden();
+    this.meilensteinLaden();
   }
 
   ngOnDestroy(): void {
@@ -141,19 +119,57 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  fetchData(page: number, pageSize: number) {
-    this.isLoading = true;
-    this.meineBeitraegeService.meineBeitraege(page, pageSize).subscribe((data) => {
-      // Wirkung zuerst: die meistgenutzten oben (Nutzerfuehrung 13.11.)
-      this.karten = nachNutzung(data.results.map((eintrag) => ausBeitrag(eintrag)));
-      this.totalRecords = data.total_records_count;
-      this.calculateTotalUsage(data.results);
-      this.isLoading = false;
-      if (this.totalRecords === 0) {
-        this.unbeantworteteLaden();
-      }
-      this.cdr.markForCheck();
-    });
+  /**
+   * Alle eigenen Beitraege; beim Nachladen bleibt die bisherige Liste stehen, bis die neue da
+   * ist. Zwei schnelle Nachladungen ueberholen sich nicht: Es gilt die letzte (switchMap).
+   * Scheitert das erste Laden, steht ein Hinweis mit neuem Versuch da; scheitert ein
+   * Nachladen, sagt es eine Meldung, und die Liste bleibt, wie sie ist.
+   */
+  laden(): void {
+    this.laden$.next();
+  }
+
+  private readonly laden$ = new Subject<void>();
+
+  private ladenAbonnieren(): void {
+    this.laden$
+      .pipe(
+        switchMap(() =>
+          this.meineBeitraegeService.alleMeineBeitraege().pipe(
+            map((antwort): AlleMeineBeitraege | null => antwort),
+            catchError((): Observable<AlleMeineBeitraege | null> => of(null)),
+          ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((antwort) => {
+        const erstes = this.isLoading;
+        this.isLoading = false;
+        if (antwort === null) {
+          this.ladefehler = !this.eintraege.length;
+          if (!erstes && this.eintraege.length) {
+            this.snackBar.open('Deine Beiträge ließen sich gerade nicht aktualisieren.', 'OK', { duration: 5000 });
+          }
+        } else {
+          this.eintraege = antwort.beitraege.map(albumEintrag);
+          this.ladefehler = false;
+          if (!this.eintraege.length) {
+            this.unbeantworteteLaden();
+          }
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  /** Fuer den Deckel: der offene Meilenstein, dem die Person am naechsten ist (naechsterMeilenstein). */
+  private meilensteinLaden(): void {
+    this.usageTrackingService
+      .getEigeneMeilensteine()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((meilensteine) => {
+        this.naechsterMeilenstein = naechsterMeilenstein(meilensteine);
+        this.cdr.markForCheck();
+      });
   }
 
   /**
@@ -173,15 +189,6 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     });
   }
 
-  nutzungsstatistikLaden() {
-    if (this.authService.getCurrentUserId()) {
-      this.usageTrackingService.getEigeneNutzungsstatistik().subscribe(stats => {
-        this.nutzungsstatistik = stats;
-        this.cdr.markForCheck();
-      });
-    }
-  }
-
   tabWaehlen(tab: MeineTab): void {
     this.tab = tab;
     this.einwuerfeGeoeffnet ||= tab === 'einwuerfe';
@@ -193,76 +200,26 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     tabMitTasteWaehlen(event, jetzt, this.tabs.length, (ziel) => this.tabWaehlen(this.tabs[ziel].wert));
   }
 
-  /**
-   * Der Wirkungssatz oben, etwa "Deine 4 Beiträge wurden 3-mal genutzt, 2 davon diese
-   * Woche.": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. Die Woche nur, wenn
-   * alle Beitraege geladen sind; eine Summe ueber eine Seite waere zu klein.
-   */
-  get statistik(): string {
-    return wirkungssatz(this.totalRecords, this.gesamtNutzung, this.nutzungDieseWoche);
+  /** "Ändern" an einer Karte (#299): nach dem Speichern laedt die Liste still nach. */
+  aendern(karte: KartenDaten): void {
+    this.verwalten.aendern(karte).pipe(takeUntil(this.destroy$)).subscribe((gespeichert) => {
+      if (gespeichert) {
+        this.laden();
+      }
+    });
   }
 
-  /** Nutzung ueber alle Seiten aus der Nutzungsstatistik, sonst die Summe dieser Seite. */
-  get gesamtNutzung(): number {
-    return this.nutzungsstatistik?.total_usage_count ?? this.totalUsageCount;
-  }
-
-  /** Summe der letzten 7 Tage; null, solange nicht alle Beitraege auf dieser Seite stehen. */
-  get nutzungDieseWoche(): number | null {
-    if (this.totalRecords > this.karten.length) {
-      return null;
-    }
-    return this.karten.reduce((summe, karte) => summe + (karte.nutzungLetzte7Tage ?? 0), 0);
-  }
-
-  /**
-   * Beitraege da, aber noch nie genutzt (UX-Review B11): dann erklaert die Seite, was
-   * „genutzt“ heisst, und nennt den naechsten Schritt. Nur mit der Statistik ueber alle
-   * Seiten, nicht mit der Summe dieser Seite.
-   */
-  get nochNichtGenutzt(): boolean {
-    return this.karten.length > 0 && this.nutzungsstatistik?.total_usage_count === 0;
-  }
-
-  calculateTotalUsage(beitraege: ContentResult[]) {
-    this.totalUsageCount = beitraege.reduce((sum, item) => {
-      return sum + (item.usage_count || 0);
-    }, 0);
-  }
-
-  onPageChange(event: PageEvent) {
-    this.pageIndex = event.pageIndex;
-    this.pageSize = event.pageSize;
-    this.fetchData(this.pageIndex + 1, this.pageSize);
-  }
-
-  /**
-   * Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape.
-   * Hier stehen nur eigene Beitraege, deshalb darf das Sheet loeschen und, bei Kommentar
-   * und Hintergrundinfo, aendern (#299). Danach laedt die Seite neu, samt Statistik; war
-   * der geloeschte der letzte Beitrag der Seite, die Seite davor.
-   */
-  beitragOeffnen(karte: KartenDaten): void {
-    const daten: BeitragSheetDaten = {
-      ...karte,
-      loeschbar: true,
-      aenderbar: istAenderbar(karte.typ),
-      zurAdresse: true,
-    };
-    this.bottomSheet
-      .open(BeitragSheetComponent, {
-        data: daten,
-        ariaLabel: karte.titel || karte.text || 'Beitrag',
-      })
-      .afterDismissed()
-      .pipe(filter((ergebnis) => ergebnis === GELOESCHT || ergebnis === GEAENDERT))
-      .subscribe((ergebnis) => {
-        if (ergebnis === GELOESCHT && this.karten.length === 1 && this.pageIndex > 0) {
-          this.pageIndex--;
-        }
-        this.fetchData(this.pageIndex + 1, this.pageSize);
-        this.nutzungsstatistikLaden();
-      });
+  /** "Beitrag löschen" im ⋮-Menue (#250): nach der Rueckfrage; ist er weg, laedt die Liste nach. */
+  loeschen(karte: KartenDaten): void {
+    this.verwalten.loeschen(karte.id).pipe(takeUntil(this.destroy$)).subscribe((weg) => {
+      if (weg) {
+        // Sofort aus der Liste, nicht erst nach dem Nachladen: Scheitert das, ist die Karte trotzdem weg.
+        this.eintraege = this.eintraege.filter((e) => e.karte.id !== karte.id);
+        this.cdr.markForCheck();
+        this.laden();
+        this.meilensteinLaden();
+      }
+    });
   }
 
   /** Aus dem leeren Zustand ein Weg weiter (#512). */

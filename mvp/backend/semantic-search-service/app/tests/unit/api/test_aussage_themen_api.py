@@ -45,7 +45,11 @@ class TestListe:
         assert resp.status_code == 200
         themen = resp.json()["themen"]
         assert len(themen) == len(THEMEN)
-        assert themen[0] == {"schluessel": THEMEN[0].schluessel, "name": THEMEN[0].name}
+        assert themen[0] == {
+            "schluessel": THEMEN[0].schluessel,
+            "name": THEMEN[0].name,
+            "motiv": THEMEN[0].motiv,
+        }
 
 
 @pytest.mark.api
@@ -64,8 +68,12 @@ class TestZuordnen:
         assert resp.json() == {
             "statement_id": str(aussage),
             "themen": [
-                {"schluessel": "klima", "name": "Klima"},
-                {"schluessel": "verkehr", "name": "Verkehr"},
+                {"schluessel": "klima", "name": "Klima", "motiv": "themen/klima.svg"},
+                {
+                    "schluessel": "verkehr",
+                    "name": "Verkehr",
+                    "motiv": "themen/verkehr.svg",
+                },
             ],
         }
         themen_service.zuordnen.assert_awaited_once_with(aussage, ["klima", "verkehr"])
@@ -170,7 +178,13 @@ class TestAussagenZumZuordnen:
                 {
                     "statement_id": str(a),
                     "statement_text": "Tempolimit bringt nichts",
-                    "themen": [{"schluessel": "verkehr", "name": "Verkehr"}],
+                    "themen": [
+                        {
+                            "schluessel": "verkehr",
+                            "name": "Verkehr",
+                            "motiv": "themen/verkehr.svg",
+                        }
+                    ],
                     "im_testset": True,
                 },
                 {
