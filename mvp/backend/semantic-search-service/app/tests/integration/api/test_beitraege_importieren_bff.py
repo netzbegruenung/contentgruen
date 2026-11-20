@@ -8,7 +8,7 @@ bekanntes Passwort hat; das Skript selbst laeuft dabei unveraendert, nur die
 Adresse und die Kopfzeilen kommen aus dem Test.
 
 Braucht BFF, semantic-search und PostgreSQL des Dev-Stacks (``mvp/run-local.sh up``).
-Liegt deshalb unter ``api/``, das die GitHub-CI auslaesst; ohne BFF ueberspringt
+Liegt deshalb unter ``api/``, das die CI ueberspringt; ohne BFF ueberspringt
 sich das Modul, im Pflichtmodus scheitert es (``stack.pflicht_ausser_in_ci``).
 Titel und Texte sind je Lauf neu, damit die Dublettenpruefung wiederholte Laeufe
 nicht abweist.
@@ -90,6 +90,17 @@ def eingewilligt(sitzung):
     if stand.status_code == 404:
         return
     assert stand.status_code == 200
+    # Vorher die Nutzungsbedingungen: Ohne sie sperrt der Dienst wie ohne Einwilligung.
+    nb = stand.json().get("nutzungsbedingungen")
+    if nb is not None:
+        assert (
+            sitzung.post(
+                f"{BFF_URL}/api/v1/nutzungsbedingungen",
+                json={"stand": nb["aktueller_stand"]["kennung"]},
+                timeout=10,
+            ).status_code
+            == 204
+        )
     kennung = stand.json()["aktueller_wortlaut"]["kennung"]
     assert (
         sitzung.post(basis, json={"wortlaut": kennung}, timeout=10).status_code == 204

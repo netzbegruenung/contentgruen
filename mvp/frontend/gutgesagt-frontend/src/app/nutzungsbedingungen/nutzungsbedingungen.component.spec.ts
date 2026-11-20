@@ -47,17 +47,22 @@ describe('NutzungsbedingungenComponent', () => {
     );
   });
 
-  it('bezieht sich in Abschnitt 2 über den Hinweis über dem Absende-Knopf ein, nicht durch bloße Nutzung (#415)', () => {
+  it('bezieht sich in Abschnitt 2 mit einem eigenen Häkchen bei der ersten Anmeldung ein, nicht durch bloße Nutzung (0.9.8)', () => {
     const text = abschnittNummer('2.');
 
-    expect(text).toContain('Diesen Bedingungen stimmst du zu, wenn du etwas einstellst');
-    expect(text).toContain('mit dem Absenden stimmst du ihnen zu');
-    expect(text).toContain('schon mit dem Speichern beim Tippen');
+    expect(text).toContain('Diesen Bedingungen stimmst du bei der ersten Anmeldung zu, mit einem eigenen Häkchen');
+    expect(text).toContain('mit dem Absenden gibst du deinen Text nach Abschnitt 4 frei');
+    expect(text).toContain('geschieht die Freigabe schon mit dem Speichern beim Tippen');
+    expect(text).not.toContain('mit dem Absenden stimmst du ihnen zu');
     expect(normalisiert(seite.textContent)).not.toMatch(/mit der Nutzung|durch die Nutzung/);
   });
 
   it('verlinkt in Abschnitt 4 dieselbe CC0-Erklärung wie der CC0-Hinweis (#415)', () => {
     expect(seite.querySelector(`a[href="${CC0_ERKLAERUNG_URL}"]`)).toBeTruthy();
+  });
+
+  it('verlinkt als CC0-Erklärung den deutschen Rechtstext, nicht die Kurzfassung (Stand 19.11.2026)', () => {
+    expect(CC0_ERKLAERUNG_URL).toBe('https://creativecommons.org/publicdomain/zero/1.0/legalcode.de');
   });
 
   it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Hinweis (Entscheidung 29.10.2026)', () => {
@@ -79,14 +84,29 @@ describe('NutzungsbedingungenComponent', () => {
 
     expect(text).toContain('Soweit der Verzicht nicht wirkt, räumst du mit derselben Erklärung jeder Person');
     expect(text).toContain('zeitlich, räumlich und inhaltlich unbeschränktes Nutzungsrecht');
-    expect(text).toContain('Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
+    // Stand 19.11.2026: "ergänzt" statt "entspricht", denn CC0 Abschnitt 3 ist nicht
+    // übertragbar und nicht unterlizenzierbar, das Nutzungsrecht hier schon.
+    expect(text).toContain('Das ergänzt die Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
+    expect(text).not.toContain('entspricht der Ersatzlizenz');
   });
 
-  it('räumt das Nutzungsrecht in Abschnitt 4 wie CC0 für bekannte und künftige Nutzungsarten ein (#521)', () => {
+  it('räumt das Nutzungsrecht in Abschnitt 4 wie CC0 für bekannte und heute noch unbekannte Nutzungsarten ein (#521, Stand 19.11.2026)', () => {
     const text = abschnittNummer('4.');
 
-    expect(text).toContain('für bekannte und künftige Nutzungsarten');
+    expect(text).toContain('für bekannte und heute noch unbekannte Nutzungsarten');
     expect(text).not.toContain('alle bekannten Nutzungsarten');
+  });
+
+  it('nennt in Abschnitt 4 Urheberschaft und Verzicht wie die CC0-Erklärung (Stand 19.11.2026)', () => {
+    const text = abschnittNummer('4.');
+
+    expect(text).toContain('Alle dürfen deinen Text kopieren, verändern und veröffentlichen');
+    expect(text).toContain('auch ohne deinen Namen zu nennen');
+    expect(text).toContain(
+      'Du bleibst Urheberin oder Urheber deines Textes, verzichtest jedoch darauf, seine Nutzung urheberrechtlich zu beschränken',
+    );
+    expect(text).toContain('Eine Pflicht zur Namensnennung für Weiterverwendende entsteht daraus nicht');
+    expect(text).not.toContain('Du behältst deine Urheberschaft');
   });
 
   it('lässt in Abschnitt 5 nur frei zugängliche fremde Bilder einbinden und sperrt andere erst nach Prüfung (#521)', () => {
@@ -105,19 +125,23 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).not.toContain('Widersprichst du nicht');
     expect(text).toContain('Geänderte Bedingungen gelten für dich erst, wenn du ihnen zustimmst');
     expect(text).toContain('Bis dahin gilt für dich der Stand, der vorher für dich galt');
-    expect(text).toContain('Schweigen oder bloßes Weiternutzen, etwa Lesen oder Bewerten, gilt nicht als Zustimmung');
+    expect(text).toContain('Schweigen oder bloßes Weiternutzen, etwa Lesen, gilt nicht als Zustimmung');
+    expect(text).not.toContain('etwa Lesen oder Bewerten');
     expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
   });
 
-  it('holt die Zustimmung in Abschnitt 10 mit dem nächsten Absenden ein, eine Frage beim Anmelden nur als Möglichkeit (#521)', () => {
+  it('fragt in Abschnitt 10 mit einem Häkchen neu, wenn sich die Bedingungen ändern (0.9.8)', () => {
     const text = abschnittNummer('10.');
 
-    // Ohne Pflichtaktion: der Hinweis über dem Absende-Knopf (Abschnitt 2) verlinkt den aktuellen Stand.
-    expect(text).toContain('wenn du das nächste Mal etwas einstellst');
-    expect(text).toContain('Der Hinweis über dem Absende-Knopf verlinkt immer den aktuellen Stand');
-    // Mit Pflichtaktion: stimmt weiter, ohne sie zu versprechen.
-    expect(text).toContain('Fragen wir dich schon vorher, etwa bei der Anmeldung');
-    expect(text).not.toContain('Bei deiner nächsten Anmeldung zeigen wir dir');
+    expect(text).toContain('Bei der ersten Anmeldung stimmst du mit einem Häkchen zu');
+    expect(text).toContain(
+      'fragen wir dich mit einem Häkchen neu, wenn du Gut gesagt das nächste Mal mit deinem Konto nutzt',
+    );
+    expect(text).toContain('Willst du nicht zustimmen, kannst du mit deinem Konto nichts mehr einstellen und nichts bewerten');
+    // Die Zustimmung kommt nicht mehr über das Absenden und nicht über die Keycloak-Pflichtaktion.
+    expect(text).not.toContain('wenn du das nächste Mal etwas einstellst');
+    expect(text).not.toContain('Fragen wir dich schon vorher, etwa bei der Anmeldung');
+    expect(text).not.toContain('kommst du ohne Zustimmung nicht mehr hinein');
     expect(text).not.toContain('melden wir beim Wechsel alle ab');
   });
 

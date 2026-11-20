@@ -6,7 +6,7 @@ All contributions are welcome: code, design, testing, feedback, and content cura
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [GNU Affero General Public License v3.0](./LICENSE), the same license as the project.
+By contributing, you agree that your contributions will be licensed under the [GNU Affero General Public License v3.0](../LICENSE), the same license as the project.
 
 ## Repository
 
@@ -35,7 +35,7 @@ docker compose -f docker-compose.dev.yml up
 - **Sign in**: button "Mit E-Mail anmelden" (Direktanmeldung), Beta-Zugang `test.user@example.com` /
   `Liebe>Hass!` from `mvp/config/managed-users.example.json`. With plain `docker compose`, copy
   that file to `mvp/config/managed-users.json` before starting, otherwise this sign-in is off
-  (see [docs/DEV-SETUP.md](docs/DEV-SETUP.md)).
+  (see [docs/DEV-SETUP.md](../docs/DEV-SETUP.md)).
 
 On Linux, `mvp/run-local.sh up` does the same in the background and creates
 `managed-users.json` itself (`status`, `reset`, `logs`, `down`).
@@ -51,7 +51,7 @@ pip install --user pre-commit
 pre-commit install
 ```
 
-This runs formatting checks and tests before each commit. See [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md) for details.
+This runs formatting checks and tests before each commit. See [docs/DEV_GUIDE.md](../docs/DEV_GUIDE.md) for details.
 
 ### Frontend (Angular)
 
@@ -84,7 +84,7 @@ cd app && uvicorn main:app --reload
 
 > First start may download models from Hugging Face – requires internet access.
 
-See [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md) for full details.
+See [docs/DEV_GUIDE.md](../docs/DEV_GUIDE.md) for full details.
 
 ## Testing
 
@@ -100,7 +100,7 @@ cd mvp/backend && dotnet test
 ```
 
 End-to-end tests (Playwright) run against the dev stack, not in CI: see
-[mvp/frontend/gutgesagt-frontend/e2e/README.md](mvp/frontend/gutgesagt-frontend/e2e/README.md).
+[mvp/frontend/gutgesagt-frontend/e2e/README.md](../mvp/frontend/gutgesagt-frontend/e2e/README.md).
 
 ## Issues
 
@@ -119,7 +119,7 @@ Issues are labelled with a type and, while they are being worked out, a triage l
 | `ready-for-human` | Fully specified, but needs a person to implement it          |
 | `wontfix`         | Will not be done                                             |
 
-The triage labels follow [docs/agents/triage-labels.md](docs/agents/triage-labels.md); a maintainer
+The triage labels follow [docs/agents/triage-labels.md](../docs/agents/triage-labels.md); a maintainer
 sets them. Planning happens on the
 [Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones), not in a file.
 
@@ -158,16 +158,16 @@ and confirm that you have the right to do so.
 4. Open a pull request against `main` on Forgejo with a clear description of what and why, and
    `Closes #<issue>`
 5. Woodpecker runs the same checks on every pull request, except the integration tests, which
-   run on `main` only ([docs/CI.md](docs/CI.md)); a maintainer reviews and merges
+   run on `main` only ([docs/CI.md](../docs/CI.md)); a maintainer reviews and merges
 
 Before starting significant work, please get in touch first to avoid duplication. Judgement rules
-for reviews are in [CODING_STANDARDS.md](CODING_STANDARDS.md).
+for reviews are in [CODING_STANDARDS.md](../CODING_STANDARDS.md).
 
 ## Feedback and security
 
 Questions and bug reports from people using Gut gesagt go through the "Feedback" button in the
 app or to [gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de). Security
-vulnerabilities: see [SECURITY.md](./SECURITY.md), never in a public issue.
+vulnerabilities: see [SECURITY.md](../SECURITY.md), never in a public issue.
 
 ## Project Structure
 
@@ -181,4 +181,4 @@ mvp/docker-compose.local-dbs.yml   Databases only, for component-based developme
 ```
 
 Planning: [Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones).
-Current state of the project: [STATUS.md](./STATUS.md).
+Current state of the project: [docs/STATUS.md](../docs/STATUS.md).

@@ -10,12 +10,15 @@ import {
   ERSTNUTZER_SATZ,
   FANGKORB_KURZ,
   KETTEN_ICONS,
+  MENUE_ICONS,
 } from '../shared/fangkorb-texte';
+import { FANGKORB_TAB_PARAM, FangkorbTab } from '../fangkorb/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormularTyp } from '../shared/formular-adresse';
 
 /**
- * Die Beitragen-Seite: nur Uebersicht, auf Desktop und Handy gleich - erst Einwerfen und
- * Weiterarbeiten, dann Verfassen (Designrunde 12.11.; #620 hatte es umgekehrt). Die Formulare sind eigene Seiten unter
+ * Die Beitragen-Seite: nur Uebersicht, auf Desktop und Handy gleich - erst die Kette in drei
+ * Schritten, dann Verfassen, abgesetzt darunter die eigenen Beitraege (Sebastian 20.11.; davor
+ * Designrunde 12.11., #620 hatte es umgekehrt). Die Formulare sind eigene Seiten unter
  * /workflow/add-*; hier wird keins eingebettet.
  */
 @Component({
@@ -34,6 +37,7 @@ export class ContributeViewComponent implements OnInit {
   readonly typBeschreibung = typBeschreibung;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
+  readonly menueIcons = MENUE_ICONS;
   readonly einwerfenTitel = EINWERFEN_TITEL;
   /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
   readonly erstnutzerSatz = ERSTNUTZER_SATZ;
@@ -73,12 +77,15 @@ export class ContributeViewComponent implements OnInit {
     this.router.navigate(['/einwerfen']);
   }
 
-  /** Weiterarbeiten: zur Liste, in der Einwuerfe destilliert und Saetze ausformuliert werden. */
-  navigateToFangkorb(): void {
-    this.router.navigate(['/fangkorb']);
+  /**
+   * Destillieren und Ausformulieren: der Fangkorb, gleich in der Arbeitsliste des Schritts.
+   * Der Fangkorb liest den Tab aus der Adresse und nimmt ihn danach wieder heraus.
+   */
+  fangkorbOeffnen(tab: FangkorbTab): void {
+    this.router.navigate(['/fangkorb'], { queryParams: { [FANGKORB_TAB_PARAM]: tab } });
   }
 
-  /** Weiterarbeiten: die eigenen Beitraege - frueher das Ordner-Icon in der Kopfzeile. */
+  /** Kein Kettenschritt: die eigene Sammlung - frueher das Ordner-Icon in der Kopfzeile. */
   navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }

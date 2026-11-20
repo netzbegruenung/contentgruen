@@ -64,11 +64,20 @@ nano .env
 | `SEMANTIC_SEARCH_NLI_BESTAETIGER_VETO_AB` | Veto of the first NLI model on the Bestätiger path: it must entail both directions at least this much (`tests/regression/MESSSET.md`) | `0.1` |
 | `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI` | Polarity penalty of the search (#574): `aus` (word lists), `schatten` (word lists decide, the NLI model judges in the background and is only counted in the log) or `an` (the NLI model decides; questions, keyword queries and no model fall back to the word lists). Same model as the NLI-Stufe (no extra RAM unless the NLI-Stufe is `aus`); with `an` each search waits for the model, median +0.3 to 0.45 s on the dev VM (`tests/regression/SUCHTESTSET.md`, `docs/DEPLOYMENT.md`) | `schatten` |
 | `SEMANTIC_SEARCH_SUCHE_POLARITAET_WIDERSPRUCH_AB` | With `an`: an Aussage counts as the opposite of the query when the NLI model sees a contradiction in both directions at least this likely | `0.9` |
+| `SEMANTIC_SEARCH_SUCHE_BEZUG_AB` | For a query of three words or more (keyword queries are not checked): an Aussage below this embedding similarity is no hit (`services/search/bezug.py`; against "Erkannt als" with an unrelated Aussage that only shares a keyword). Its answers come via the direct path only with `…_BEZUG_DIREKT_AB` | `0.87` |
+| `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI` | For a statement query (no question): Aussagen between `…_BEZUG_AB` and `…_BEZUG_SICHER_AB` count only if the NLI model sees entailment in one direction of at least `…_BEZUG_FOLGERUNG_AB` (no model or busy for 2 s: they count). Keeps out sentences that are merely built alike; the search waits for the model (median +0.07 s, 95th percentile +0.25 s on the shared dev VM). `false` leaves only the lower limit; `tests/regression/SUCHTESTSET.md`, section Bezug | `true` |
+| `SEMANTIC_SEARCH_SUCHE_BEZUG_SICHER_AB` | With `…_BEZUG_NLI`: from this similarity an Aussage counts without the model | `0.92` |
+| `SEMANTIC_SEARCH_SUCHE_BEZUG_FOLGERUNG_AB` | With `…_BEZUG_NLI`: minimum entailment (either direction) for an Aussage in the band | `0.2` |
+| `SEMANTIC_SEARCH_SUCHE_BEZUG_DIREKT_AB` | Answers of an Aussage without Bezug come via the direct path only if their own raw similarity to the query reaches this value (otherwise a short answer to the unrelated Aussage stood there as best answer, 0.83 on production 0.9.2). `1.01` turns the exception off | `0.86` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR` | Inhaltstor (`services/search/inhaltstor.py`): for a query of three words or more, a hit in the uncertain band counts only if a lemma of the query's nouns and proper nouns appears in the Aussage, the contribution's title or text, or (direct path only) the Aussagen it answers. Query without nouns, keyword queries or spaCy model not loaded yet: gate open. Same model as Gegenlesen, no extra RAM; `tests/regression/SUCHTESTSET.md`, section Inhaltstor | `true` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_AB` | With `…_INHALTSTOR`: lower end of the band (Aussage similarity, raw score on the direct path) | `0.82` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_AUSSAGE_BIS` | With `…_INHALTSTOR`: from this Aussage similarity a statement hit counts without a shared word | `0.92` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_DIREKT_BIS` | With `…_INHALTSTOR`: from this raw score a direct hit counts without a shared word | `0.90` |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
 | `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed. Set only together with the BFF switch to the new realm (`docs/KEYCLOAK_REALM.md`, order) | unset |
 | `SEMANTIC_SEARCH_KEYCLOAK_REALM` | Realm the accounts are created in | `gutgesagt` |
-| `SEMANTIC_SEARCH_KEYCLOAK_APP_CLIENT_ID`, `SEMANTIC_SEARCH_APP_URL` | Where the link in the "set password" mail leads afterwards | unset |
+| `SEMANTIC_SEARCH_KEYCLOAK_APP_CLIENT_ID`, `SEMANTIC_SEARCH_APP_URL` | Where the link in the "set password" mail leads afterwards: `<app>/einladung/anmelden`, which starts the login; must be a valid redirect URI of the client, otherwise the mail falls back to `<app>` | unset |
 
 ## Path Validation
 

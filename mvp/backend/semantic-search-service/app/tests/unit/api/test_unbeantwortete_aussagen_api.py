@@ -67,7 +67,11 @@ class TestUnbeantwortet:
                     "statement_text": "Wärmepumpen sind zu teuer",
                     "personen_ohne_treffer": 3,
                     "themen": [
-                        {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
+                        {
+                            "schluessel": "energie-heizen",
+                            "name": "Energie und Heizen",
+                            "motiv": "themen/energie-heizen.svg",
+                        }
                     ],
                 },
                 {
@@ -245,7 +249,9 @@ class TestVorab:
 
         assert resp.status_code == 200
         themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
-        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
+        assert resp.json()["themen"] == [
+            {"schluessel": "klima", "name": "Klima", "motiv": "themen/klima.svg"}
+        ]
 
     def test_scheitert_das_zuordnen_bleibt_die_aussage_angelegt(
         self, statement_service, themen_service
@@ -284,7 +290,7 @@ class TestVorab:
         themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
 
     @pytest.mark.parametrize(
-        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]
+        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa", "soziales"]]
     )
     def test_ungueltige_themen_werden_vor_dem_anlegen_abgewiesen(
         self, statement_service, themen_service, themen

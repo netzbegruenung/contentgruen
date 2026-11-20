@@ -8,7 +8,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
-import { ResultViewComponent, erkannteAussage, themenDerTreffer } from './result-view.component';
+import { ResultViewComponent, erkannteAussage, erkannteMitThemen, themenDerTreffer } from './result-view.component';
 import { By } from '@angular/platform-browser';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { AuthService } from '../auth/auth.service';
@@ -535,6 +535,48 @@ describe('erkannteAussage', () => {
   });
 });
 
+describe('erkannteMitThemen', () => {
+  const ID = '11111111-2222-4333-8444-555555555555';
+  const KLIMA = { schluessel: 'klima', name: 'Klima' };
+  const WOHNEN = { schluessel: 'wohnen', name: 'Wohnen' };
+  const antwort = (kommentare: any[]) =>
+    ({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: '',
+      commentary_search_results_count: kommentare.length,
+      commentary_search_results: kommentare,
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    }) as any;
+
+  it('nimmt die Themen von einem Treffer der erkannten Aussage, als eigenes Array', () => {
+    const themen = [KLIMA, WOHNEN];
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen }]);
+
+    const ergebnis = erkannteMitThemen(a, { id: ID, text: 'A' });
+
+    expect(ergebnis).toEqual({ statement_id: ID, themen: [KLIMA, WOHNEN] });
+    expect(ergebnis!.themen).not.toBe(themen);
+  });
+
+  it('gibt eine Aussage ohne Themen mit leerer Liste', () => {
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen: [] }]);
+    expect(erkannteMitThemen(a, { id: ID, text: 'A' })).toEqual({ statement_id: ID, themen: [] });
+  });
+
+  it('gibt null, wenn die Themen nicht nachschlagbar waren (null)', () => {
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen: null }]);
+    expect(erkannteMitThemen(a, { id: ID, text: 'A' })).toBeNull();
+  });
+
+  it('gibt null ohne erkannte Aussage oder ohne ihre ID', () => {
+    const a = antwort([{ score: 0.9, statement_id: null, statement_text: 'A' }]);
+    expect(erkannteMitThemen(a, null)).toBeNull();
+    expect(erkannteMitThemen(a, { id: null, text: 'A' })).toBeNull();
+  });
+});
+
 /**
  * Eine Darstellung fuer Handy und Desktop (K2+): Kopfband mit der erkannten Aussage,
  * Chips je Typ, Treffer nach Aussage gruppiert, je Typ zuerst hoechstens drei Karten.
@@ -663,6 +705,55 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
   /** Die Aufklapp-Knoepfe der eingeklappten Karten. */
   const aufklapper = (seite: Element) => Array.from(seite.querySelectorAll<HTMLButtonElement>('.aufklapp-knopf'));
 
+  describe('Themen der erkannten Aussage', () => {
+    const KLIMA = { schluessel: 'klima', name: 'Klima' };
+    const WOHNEN = { schluessel: 'wohnen', name: 'Wohnen' };
+
+    function themenListeLaden(): void {
+      TestBed.inject(HttpTestingController)
+        .match((r) => r.url.endsWith('/api/v1/statement/themen'))
+        .forEach((r) => r.flush({ themen: [KLIMA, WOHNEN] }));
+      neuZeichnen();
+    }
+
+    it('zeigt sie unter "Erkannt als", angemeldet mit "Themen ändern"', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: [KLIMA, WOHNEN] }] }));
+      themenListeLaden();
+
+      const themen = seite.querySelector('.erkannt-themen')!;
+      expect(texte(themen, '.thema-marke')).toEqual(['Klima', 'Wohnen']);
+      expect(text(themen.querySelector('.themen-umschalter'))).toBe('Themen ändern');
+    });
+
+    it('zieht den Themenfilter nach einer Zuordnung gleich nach, ohne neue Suche', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: [KLIMA] }] }));
+      themenListeLaden();
+      const filter = () => texte(seite.querySelector('.themen-filter-leiste')!, 'button');
+      expect(filter()).toEqual(['Alle Themen', 'Klima']);
+
+      seite.querySelector<HTMLButtonElement>('.erkannt-themen .themen-umschalter')!.click();
+      neuZeichnen();
+      Array.from(seite.querySelectorAll<HTMLButtonElement>('.erkannt-themen .thema-chip'))
+        .find((k) => text(k) === 'Wohnen')!
+        .click();
+      neuZeichnen();
+      expect(filter()).withContext('sofort, vor der Antwort').toEqual(['Alle Themen', 'Klima', 'Wohnen']);
+
+      const http = TestBed.inject(HttpTestingController);
+      http.expectOne((r) => r.url.endsWith('/api/v1/statement/themen/zuordnen')).flush({ statement_id: ERKANNT_ID, themen: [KLIMA, WOHNEN] });
+      neuZeichnen();
+      expect(filter()).toEqual(['Alle Themen', 'Klima', 'Wohnen']);
+      http.expectNone((r) => r.url.endsWith('/api/v1/search/searchByText'));
+    });
+
+    it('bietet ohne bekannte Themen (null) kein Zuordnen an', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: null }] }));
+      themenListeLaden();
+
+      expect(seite.querySelector('app-aussage-themen')).toBeNull();
+    });
+  });
+
   for (const mobil of [false, true]) {
     const wo = mobil ? 'Handy' : 'Desktop';
 
@@ -688,6 +779,20 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
         'Passt zu deinem Suchtext 1 Treffer',
       ]);
       expect(seite.querySelector('.mobile-tab-bar, app-result-carousel')).withContext('keine Tabs, kein Karussell').toBeNull();
+    });
+
+    it(`klappt im aufgeklappten Bereich "Weitere" die Karten nicht noch einmal ein (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!.click();
+      fixture.detectChanges();
+      const karten = seite.querySelectorAll('.weitere-liste app-beitragskarte');
+      expect(karten.length).toBe(3);
+      karten.forEach((karte) => {
+        expect(karte.querySelector('.aufklapp-knopf')).withContext('kein zweites Aufklappen').toBeNull();
+        expect(karte.querySelector('.karte-inhalt')).withContext('Inhalt steht da').toBeTruthy();
+      });
+      // Die erkannte Gruppe bleibt wie gehabt: ausser der besten eingeklappt
+      expect(seite.querySelector('.gruppe:not(.weitere-liste .gruppe) .eingeklappte-karten .aufklapp-knopf')).toBeTruthy();
     });
 
     it(`zeigt an den Karten keine eigene Antwort-auf-Zeile, die Gruppe traegt die Aussage (${wo})`, async () => {
@@ -1262,5 +1367,97 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
     TestBed.inject(StateManagementService).setSearchResults(antwort({ k: kommentare.map((k) => ({ ...k })) }));
     neuZeichnen();
     expect(seite.querySelectorAll('app-beitragskarte').length).toBe(3);
+  });
+});
+
+/**
+ * Testeingabe ("test", "hallo", "hilfe"): Statt zu suchen steht eine freundliche Karte da.
+ * Kein Suchaufruf heisst: Das Backend legt keine Aussage an, und nichts landet als Luecke
+ * in "Hier fehlt eine Antwort".
+ */
+describe('ResultViewComponent: Testeingabe', () => {
+  let http: HttpTestingController;
+
+  async function oeffnen(suchtext: string): Promise<{ harness: RouterTestingHarness; seite: HTMLElement }> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'result', component: ResultViewComponent }]),
+      ],
+      imports: [ResultViewComponent],
+    });
+    http = TestBed.inject(HttpTestingController);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`result?searchQuery=${encodeURIComponent(suchtext)}`, ResultViewComponent);
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    return { harness, seite: harness.routeNativeElement as HTMLElement };
+  }
+
+  function suchaufrufe(): number {
+    return http.match((r) => r.url.endsWith('/api/v1/search/searchByText')).length;
+  }
+
+  // Keine weiteren Aufrufe, etwa an andere Endpunkte, die eine Aussage anlegen koennten.
+  afterEach(() => http.verify());
+
+  it('zeigt keine spaete Antwort einer vorigen Suche unter der Karte', async () => {
+    const { harness, seite } = await oeffnen('Klimaschutz ist zu teuer');
+    const offen = http.expectOne((r) => r.url.endsWith('/api/v1/search/searchByText'));
+    await harness.navigateByUrl('result?searchQuery=test', ResultViewComponent);
+    await harness.fixture.whenStable();
+    offen.flush({
+      query_was_newly_added_as_statement: true,
+      statement_id: null,
+      statement_text: 'Klimaschutz ist zu teuer',
+      commentary_search_results_count: 0,
+      commentary_search_results: [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    });
+    harness.detectChanges();
+    expect(suchaufrufe()).withContext('fuer "test" kein neuer Suchaufruf').toBe(0);
+    expect(seite.querySelector('.testeingabe-karte')).toBeTruthy();
+    expect(seite.querySelector('.unified-empty-state')).withContext('alte Antwort bleibt weg').toBeNull();
+    expect(seite.querySelector('app-nicht-dabei')).toBeNull();
+  });
+
+  for (const eingabe of ['test', 'Hallo!', 'Was ist das?', 'ASDF', '12345', 'xxxx', '...']) {
+    it(`sucht bei "${eingabe}" nicht und zeigt die Karte`, async () => {
+      const { seite } = await oeffnen(eingabe);
+      expect(suchaufrufe()).withContext('kein Suchaufruf, also keine Aussage und keine Luecke').toBe(0);
+      const karte = seite.querySelector('.testeingabe-karte');
+      expect(karte).withContext('Karte statt Treffern').toBeTruthy();
+      expect(karte!.closest('[aria-live="polite"]')).withContext('angekuendigt per aria-live').toBeTruthy();
+      expect(seite.querySelector('.testeingabe-text')!.textContent!.trim().length).toBeGreaterThan(0);
+      expect(seite.querySelector('.unified-empty-state')).withContext('kein Leerzustand mit Antworten-Knopf').toBeNull();
+      expect(seite.querySelector('app-nicht-dabei')).toBeNull();
+    });
+  }
+
+  it('das Beispiel sucht per Klick, und dann wird wirklich gesucht', async () => {
+    const { harness, seite } = await oeffnen('hi');
+    const beispiel = seite.querySelector<HTMLAnchorElement>('.testeingabe-beispiel')!;
+    expect(beispiel.getAttribute('href')).toContain('/result?searchQuery=');
+    beispiel.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(suchaufrufe()).toBe(1);
+    expect(seite.querySelector('.testeingabe-karte')).withContext('neue Suche, Karte weg').toBeNull();
+  });
+
+  for (const eingabe of ['A5', '112 Notruf', 'aab']) {
+    it(`sucht bei "${eingabe}" normal`, async () => {
+      const { seite } = await oeffnen(eingabe);
+      expect(suchaufrufe()).toBe(1);
+      expect(seite.querySelector('.testeingabe-karte')).toBeNull();
+    });
+  }
+
+  it('sucht normal, wenn das Wort nur Teil der Eingabe ist', async () => {
+    const { seite } = await oeffnen('Testergebnis Corona');
+    expect(suchaufrufe()).toBe(1);
+    expect(seite.querySelector('.testeingabe-karte')).toBeNull();
   });
 });

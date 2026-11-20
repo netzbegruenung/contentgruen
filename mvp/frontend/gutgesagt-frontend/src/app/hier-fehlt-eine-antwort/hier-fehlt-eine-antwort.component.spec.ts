@@ -7,9 +7,16 @@ import { HierFehltEineAntwortComponent } from './hier-fehlt-eine-antwort.compone
 import { environment } from '../../environments/environment';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { LADE_TIMEOUT_MS, WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
+import { By } from '@angular/platform-browser';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { of } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
+import { BestaetigungsDialogComponent } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 
 const SPRACHE_URL = `${environment.baseUrl}/api/v1/spracherkennung`;
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
+const ENTFERNEN_URL = (id: string) => `${environment.baseUrl}/api/v1/moderation/content/statement/${id}`;
 const VORAB_URL = `${environment.baseUrl}/api/v1/statement/vorab`;
 const THEMEN_URL = `${environment.baseUrl}/api/v1/statement/themen`;
 const ZUORDNEN_URL = `${THEMEN_URL}/zuordnen`;
@@ -97,7 +104,7 @@ describe('HierFehltEineAntwortComponent', () => {
     ]);
 
     const [gesucht, ohneKommentar] = aussagen();
-    expect(gesucht.querySelector('.gesucht')?.textContent?.trim()).toBe(
+    expect(gesucht.querySelector('.gesucht-text')?.textContent?.trim()).toBe(
       '3 Personen suchten das ohne Treffer',
     );
     expect(ohneKommentar.querySelector('.gesucht')).toBeNull();
@@ -107,7 +114,7 @@ describe('HierFehltEineAntwortComponent', () => {
   it('zeigt eine einzelne Person im Singular', () => {
     liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 1 }]);
 
-    expect(aussagen()[0].querySelector('.gesucht')?.textContent?.trim()).toBe(
+    expect(aussagen()[0].querySelector('.gesucht-text')?.textContent?.trim()).toBe(
       '1 Person suchte das ohne Treffer',
     );
   });
@@ -410,6 +417,120 @@ describe('HierFehltEineAntwortComponent', () => {
       expect(text()).toContain('konnte nicht angelegt werden');
       expect((element().querySelector('textarea[name="aussage"]') as HTMLTextAreaElement).value)
         .toBe('Das Heizungsgesetz enteignet uns');
+    });
+  });
+  describe('Melden und Entfernen', () => {
+    const ZWEI: Zeile[] = [
+      { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 3 },
+      { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', personen_ohne_treffer: 0 },
+    ];
+
+    function als(rolle: { isAdmin?: boolean }) {
+      spyOn(TestBed.inject(AuthService), 'getUserInfo').and.returnValue({ isAuthenticated: true, ...rolle } as never);
+    }
+
+    function karten(): AussagekarteComponent[] {
+      return fixture.debugElement.queryAll(By.directive(AussagekarteComponent)).map((d) => d.componentInstance);
+    }
+
+    function rueckfrage(antwort: boolean) {
+      return spyOn(TestBed.inject(MatDialog), 'open').and.returnValue({
+        afterClosed: () => of(antwort),
+      } as MatDialogRef<unknown>);
+    }
+
+    it('bietet Angemeldeten auf jeder Karte Melden an, Entfernen nicht', () => {
+      als({});
+      liefern(ZWEI);
+
+      expect(karten().map((k) => [k.aussageId, k.meldbar, k.entfernbar])).toEqual([
+        ['a-1', true, false],
+        ['a-2', true, false],
+      ]);
+    });
+
+    it('bietet Admins "Aussage entfernen" an', () => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+
+      expect(karten().every((k) => k.entfernbar)).toBeTrue();
+    });
+
+    it('fragt vor dem Entfernen nach, sagt "endgültig" und nimmt die Karte ohne Neuladen weg', fakeAsync(() => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+      const offen = rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      const [dialog, konfig] = offen.calls.mostRecent().args;
+      const daten = konfig?.data as { titel: string; text: string };
+      expect(dialog).toBe(BestaetigungsDialogComponent);
+      expect(daten.titel).toContain('endgültig');
+      expect(daten.text).toContain('„Wärmepumpen sind zu teuer“');
+      expect(daten.text).toContain('nicht rückgängig');
+      expect((daten as { warnung?: boolean }).warnung).toBeTrue();
+
+      const anfrage = http.expectOne(ENTFERNEN_URL('a-1'));
+      expect(anfrage.request.method).toBe('DELETE');
+      anfrage.flush({ success: true, message: 'ok' });
+      fixture.detectChanges();
+
+      expect(aussagen().length).toBe(1);
+      expect(aussagen()[0].textContent).toContain('Windräder sind hässlich');
+      tick();
+      expect(element().querySelector('[aria-live="polite"]')?.textContent).toContain('Aussage entfernt: „Wärmepumpen sind zu teuer“');
+      expect(document.activeElement).toBe(element().querySelector('ul.aussagen'));
+    }));
+
+    it('setzt den Fokus nach der letzten Karte auf die Einleitung', fakeAsync(() => {
+      als({ isAdmin: true });
+      liefern([ZWEI[0]]);
+      rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      http.expectOne(ENTFERNEN_URL('a-1')).flush({ success: true, message: 'ok' });
+      fixture.detectChanges();
+      tick();
+
+      expect(aussagen().length).toBe(0);
+      expect(document.activeElement).toBe(element().querySelector('p.einleitung'));
+    }));
+
+    it('nimmt die Karte auch weg, wenn die Aussage schon entfernt war (404)', fakeAsync(() => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+      rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      http.expectOne(ENTFERNEN_URL('a-1')).flush('weg', { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+      tick();
+
+      expect(aussagen().length).toBe(1);
+      expect(element().querySelector('.entfernen-fehler')).toBeNull();
+    }));
+
+    it('entfernt nichts, wenn der Admin abbricht', () => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+      rueckfrage(false);
+
+      karten()[0].entfernen.emit();
+      http.expectNone(ENTFERNEN_URL('a-1'));
+      expect(aussagen().length).toBe(2);
+    });
+
+    it('meldet einen Fehler beim Entfernen und lässt die Karte stehen', () => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+      rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      http.expectOne(ENTFERNEN_URL('a-1')).flush('kaputt', { status: 500, statusText: 'Server Error' });
+      fixture.detectChanges();
+
+      expect(aussagen().length).toBe(2);
+      expect(element().querySelector('[role="alert"].entfernen-fehler')?.textContent).toContain('konnte nicht entfernt werden');
     });
   });
 });

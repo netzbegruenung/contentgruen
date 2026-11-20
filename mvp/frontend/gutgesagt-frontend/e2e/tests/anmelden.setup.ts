@@ -17,7 +17,11 @@ setup('anmelden', async ({ page }) => {
   // Bewerten (#489). Das Testkonto willigt einmal in den aktuellen Wortlaut ein.
   const stand = await page.request.get('/api/v1/art9-einwilligung');
   expect(stand.status()).toBe(200);
-  const { aktueller_wortlaut } = await stand.json();
+  const { aktueller_wortlaut, nutzungsbedingungen } = await stand.json();
+  // Vorher die Nutzungsbedingungen, auf derselben Seite gefragt; ohne sie sperrt das Backend ebenso.
+  expect(
+    (await page.request.post('/api/v1/nutzungsbedingungen', { data: { stand: nutzungsbedingungen.aktueller_stand.kennung } })).status(),
+  ).toBe(204);
   expect(
     (await page.request.post('/api/v1/art9-einwilligung', { data: { wortlaut: aktueller_wortlaut.kennung } })).status(),
   ).toBe(204);

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -114,7 +114,9 @@ describe('FangkorbComponent', () => {
   }
 
   function zaehler(name: string): string {
-    return tabKnopf(name).querySelector('.tab-zahl')!.textContent!.trim();
+    // Ohne das Symbol, das am Handy vor der Zahl steht
+    const zahl = tabKnopf(name).querySelector('.tab-zahl')!;
+    return Array.from(zahl.childNodes).filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('').trim();
   }
 
   function filterKnopf(beschriftung: string): HTMLButtonElement {
@@ -213,6 +215,46 @@ describe('FangkorbComponent', () => {
       expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
       expect(component.filter.nurMeine).toBeTrue();
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
+    });
+
+    /** Die Adresse, mit der der Fangkorb aufgeht (Schritte der Beitragen-Seite). */
+    function adresse(queryParams: Record<string, string>): void {
+      const route = TestBed.inject(ActivatedRoute);
+      route.snapshot = { queryParamMap: convertToParamMap(queryParams) } as ActivatedRouteSnapshot;
+    }
+
+    it('oeffnet den Tab aus der Adresse, merkt ihn und nimmt ihn aus der Adresse', () => {
+      adresse({ tab: 'ausformulieren' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Ausformulieren').getAttribute('aria-selected')).toBe('true');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
+      expect(JSON.parse(sessionStorage.getItem(FILTER_SCHLUESSEL)!).tab).toBe('ausformulieren');
+      expect(router.navigate).toHaveBeenCalledOnceWith([], jasmine.objectContaining({
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }));
+    });
+
+    it('geht mit ?tab=destillieren auch dann beim Destillieren auf, wenn die Sitzung anderes gemerkt hat', () => {
+      sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'ausformulieren' }));
+      adresse({ tab: 'destillieren' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('laesst Tab und Adresse ohne gueltigen Tab in der Adresse, wie sie sind', () => {
+      sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'ausformulieren' }));
+      adresse({ tab: 'toString' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Ausformulieren').getAttribute('aria-selected')).toBe('true');
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('haelt Tab und Filter in der Sitzung', () => {
@@ -474,6 +516,19 @@ describe('FangkorbComponent', () => {
       expect(rechteck('.filterleiste').top).toBeGreaterThanOrEqual(zweiter.bottom);
       expect(kartenKomponenten().map((karte) => karte.quer)).toEqual([true]);
       expect(karten()[0].classList).toContain('karte--quer');
+    });
+
+    it('zeigt am Desktop die Erklaerung immer, ohne ?-Knopf, und die Kettensymbole an den Tabs', () => {
+      breit$.next(true);
+      erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erklaerung')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.erklaerung-umschalter')).toBeNull();
+      const emojis = Array.from(fixture.nativeElement.querySelectorAll('.tab-emoji') as NodeListOf<HTMLElement>).map(
+        (e) => e.textContent!.trim(),
+      );
+      expect(emojis).toEqual(['⚗️', '🖋️']);
+      expect(fixture.nativeElement.querySelector('.tab-name .tab-emoji')).toBeTruthy();
     });
 
     it('legt Einwerfen am Desktop als Knopf in die Seitenleiste statt schwebend', () => {

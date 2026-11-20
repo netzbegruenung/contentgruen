@@ -11,7 +11,7 @@ namespace BFF.Proxy;
 /// Proxy-Request, bevor dieser Code laeuft. Deshalb wird die Liste in
 /// <see cref="ClientControlledIdentityHeaders"/> hier zuerst bedingungslos entfernt -- vor
 /// jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts vom Client
-/// durchreichen -- und danach werden X-User, X-Is-Admin und X-User-Display-Name
+/// durchreichen -- und danach werden X-User, X-Is-Admin, X-User-Display-Name und X-User-Full-Name
 /// ausschliesslich serverseitig bestimmt: aus den Claims des angemeldeten Nutzers und der
 /// konfigurierten Admin-Allowlist, zusammengefasst in <see cref="AdminPolicy"/> und
 /// <see cref="DisplayNamePolicy"/>. Gesetzt wird
@@ -28,6 +28,15 @@ public static class IdentityHeaderTransform
     /// ASCII, und "Jürgen Ö." darf nicht an HttpHeaders.Add scheitern. Das Backend dekodiert.
     /// </summary>
     public const string DisplayNameHeader = "X-User-Display-Name";
+
+    /// <summary>
+    /// Der ungekuerzte Name aus <see cref="DisplayNamePolicy.FullFrom"/>, prozentkodiert wie der
+    /// Anzeigename. Nur fuer Startkonten (STARTKONTEN, GLOSSARY.md "Startkonto"): Das sind
+    /// Funktionskonten, keine Personen. Den vollen Namen einer Person bekommt der Suchdienst
+    /// nie. Er prueft die Kennung zusaetzlich gegen SEMANTIC_SEARCH_STARTKONTEN; der Name steht
+    /// in keinem Log.
+    /// </summary>
+    public const string FullNameHeader = "X-User-Full-Name";
 
     /// <summary>
     /// E-Mail-Adresse des Kontos, prozentkodiert wie der Anzeigename. Nur auf dem Meldeweg
@@ -65,6 +74,7 @@ public static class IdentityHeaderTransform
         "X-User-Id",
         "X-User-Name",
         DisplayNameHeader,
+        FullNameHeader,
         EmailHeader,
         "X-Roles",
         "X-Is-Authenticated",
@@ -78,12 +88,17 @@ public static class IdentityHeaderTransform
     /// IdentityHeaderTransformTests ohne Host aufrufen. Ohne Standardwert, damit eine
     /// kuenftige zweite Aufrufstelle die Liste nicht stillschweigend weglassen kann.
     /// </param>
+    /// <param name="startkonten">
+    /// Kennungen der Startkonten (STARTKONTEN), bereits zerlegt. Nur fuer sie geht der volle
+    /// Name mit. Fehlt die Liste, bekommt niemand einen: der sichere Ausgang.
+    /// </param>
     public static void Apply(
         HttpRequestMessage proxyRequest,
         ClaimsPrincipal user,
         string? path,
         IReadOnlyCollection<string> adminUserIds,
-        ILogger logger)
+        ILogger logger,
+        IReadOnlyCollection<string>? startkonten = null)
     {
         // Zuerst und ohne Bedingung: der Client darf ueber Identitaet und Rechte nichts aussagen.
         foreach (var header in ClientControlledIdentityHeaders)
@@ -103,6 +118,14 @@ public static class IdentityHeaderTransform
             if (anzeigename is not null)
             {
                 SetSingleValue(proxyRequest, DisplayNameHeader, Uri.EscapeDataString(anzeigename));
+
+                var vollerName = startkonten is not null && startkonten.Contains(userId, StringComparer.Ordinal)
+                    ? DisplayNamePolicy.FullFrom(user)
+                    : null;
+                if (vollerName is not null && vollerName != anzeigename)
+                {
+                    SetSingleValue(proxyRequest, FullNameHeader, Uri.EscapeDataString(vollerName));
+                }
             }
 
             // Die Adresse selbst steht in keinem Log. Nur eine bestaetigte (Review zu #670).

@@ -47,6 +47,26 @@ public static class DisplayNamePolicy
         return vornamen.Length > 0 ? vornamen[0] : null;
     }
 
+    /// <summary>
+    /// Der ungekuerzte Name aus denselben Quellen wie <see cref="From"/>: "Redaktion Gut gesagt".
+    /// Nur fuer Startkonten (GLOSSARY.md "Startkonto"): Das sind Funktionskonten, keine Personen,
+    /// und sie sollen mit vollem Namen erscheinen. Nur fuer sie ruft
+    /// <see cref="IdentityHeaderTransform"/> das auf (STARTKONTEN).
+    /// </summary>
+    /// <returns>Der volle Name, oder null, wenn keine Quelle Vor- und Nachname hergibt.</returns>
+    public static string? FullFrom(ClaimsPrincipal user)
+    {
+        var vornamen = Woerter(Wert(user, ClaimTypes.GivenName));
+        var nachnamen = Woerter(Wert(user, ClaimTypes.Surname));
+        if (vornamen.Length > 0 && nachnamen.Length > 0)
+        {
+            return string.Join(' ', vornamen.Concat(nachnamen));
+        }
+
+        var name = Woerter(Wert(user, NameClaim));
+        return name.Length > 1 ? string.Join(' ', name) : null;
+    }
+
     private static string? Wert(ClaimsPrincipal user, string typ)
     {
         var wert = user.Claims.FirstOrDefault(c => c.Type == typ)?.Value;

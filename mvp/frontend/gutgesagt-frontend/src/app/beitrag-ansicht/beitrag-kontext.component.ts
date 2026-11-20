@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AussageKurz, WeitereAntwort } from '../services/content.service';
 import { typEmoji, typLabel } from '../shared/content-type-registry';
 import { ROUTES } from '../shared/constants/app.constants';
+import { AussageThemenComponent } from '../shared/themen/aussage-themen.component';
+import { AussageMitThemenFeld } from '../services/themen.service';
 
 export const ANTWORT_AUF = 'Antwort auf:';
 export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
@@ -12,11 +14,12 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
  * Unter der Karte auf /beitrag/:id (#603): die Aussage, auf die der Beitrag antwortet,
  * als Link zur Suche, und weitere Antworten zu ihr als Links auf ihre eigene Adresse.
  * Ohne Aussage zeigt die Komponente nichts. Die Daten liefert /beitrag/{id} mit.
+ * Unter der Aussage ihre Themen; Angemeldete ordnen sie dort zu (app-aussage-themen).
  */
 @Component({
   selector: 'app-beitrag-kontext',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AussageThemenComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section *ngIf="aussage" class="beitrag-kontext" aria-label="Aussage und weitere Antworten">
@@ -26,6 +29,7 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
           aussage.text
         }}</a>
       </p>
+      <app-aussage-themen *ngIf="mitThemen" [aussage]="mitThemen"></app-aussage-themen>
       <ng-container *ngIf="weitere.length">
         <h2 class="weitere-titel">{{ weitereAntworten }}</h2>
         <ul class="weitere">
@@ -111,9 +115,25 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
     `,
   ],
 })
-export class BeitragKontextComponent {
+export class BeitragKontextComponent implements OnChanges {
   @Input() aussage: AussageKurz | null = null;
   @Input() weitere: WeitereAntwort[] = [];
+
+  /**
+   * Einmal je Aussage gebildet: app-aussage-themen aendert darin die Themen. null ohne
+   * bekannte Themen (nicht nachschlagbar oder aelterer Dienst): kein Zuordnen, das die
+   * vorhandenen ersetzte.
+   */
+  mitThemen: AussageMitThemenFeld | null = null;
+
+  ngOnChanges(): void {
+    const themen = this.aussage?.themen;
+    if (!this.aussage || !Array.isArray(themen)) {
+      this.mitThemen = null;
+    } else if (this.aussage.id !== this.mitThemen?.statement_id) {
+      this.mitThemen = { statement_id: this.aussage.id, themen: [...themen] };
+    }
+  }
 
   readonly antwortAuf = ANTWORT_AUF;
   readonly weitereAntworten = WEITERE_ANTWORTEN;

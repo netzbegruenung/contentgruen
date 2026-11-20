@@ -15,8 +15,11 @@ from domain.models.statement import (
 )
 from services.beitrag_kontext import (
     WEITERE_ANTWORTEN_HOECHSTENS,
+    AussageKurz,
+    BeitragKontext,
     aussage_waehlen,
     kontext_laden,
+    themen_ergaenzen,
 )
 from tests.conftest import create_base_content_fields
 
@@ -125,7 +128,11 @@ class TestKontextLaden:
         body = (await kontext_laden(BEITRAG, _dienst([aussage]))).als_json()
 
         assert body == {
-            "aussage": {"id": str(aussage.id), "text": "Wind tötet Vögel"},
+            "aussage": {
+                "id": str(aussage.id),
+                "text": "Wind tötet Vögel",
+                "themen": [],
+            },
             "weitere_antworten": [
                 {"id": str(a), "content_type": "commentary", "titel": "T"}
             ],
@@ -139,3 +146,31 @@ def test_beitragstypen_der_weiteren_antworten_wie_in_der_registry():
     from repositories.implementations.qdrant.statement_repository import _BEITRAGSTYPEN
 
     assert sorted(_BEITRAGSTYPEN) == BEITRAGSTYPEN_WERTE
+
+
+@pytest.mark.unit
+def test_themen_ergaenzen_traegt_die_themen_der_aussage_nach():
+    aussage = AussageKurz(id=uuid.uuid4(), text="Wind tötet Vögel")
+    kontext = BeitragKontext(aussage=aussage)
+    themen_service = MagicMock()
+    themen_service.themen_von.return_value = {aussage.id: ["natur-umwelt", "weg"]}
+
+    themen_ergaenzen(kontext, themen_service)
+
+    # Unbekannte Schluessel fallen in der Antwort weg.
+    assert kontext.als_json()["aussage"]["themen"] == [
+        {
+            "schluessel": "natur-umwelt",
+            "name": "Natur und Umwelt",
+            "motiv": "themen/natur-umwelt.svg",
+        }
+    ]
+
+
+@pytest.mark.unit
+def test_themen_ergaenzen_ohne_aussage_fragt_nicht():
+    themen_service = MagicMock()
+
+    themen_ergaenzen(BeitragKontext(), themen_service)
+
+    themen_service.themen_von.assert_not_called()

@@ -187,3 +187,23 @@ async def test_index_auf_antwort_ids_liegt_an(
         or {}
     )
     assert FELD_ANTWORT_IDS in schema
+
+
+async def test_zu_antworten_findet_aussagen_fuer_viele_beitraege_auf_einmal(
+    statement_service, post_service
+):
+    erste = await _aussage(statement_service, "Radwege nehmen nur Parkplätze weg")
+    zweite = await _aussage(statement_service, "Tempo 30 ist Schikane")
+    beitrag_a = await _post(post_service)
+    beitrag_b = await _post(post_service)
+    ohne = await _post(post_service)
+
+    await _verknuepfen(statement_service, beitrag_a, erste)
+    await _verknuepfen(statement_service, beitrag_b, erste)
+    await _verknuepfen(statement_service, beitrag_b, zweite)
+
+    gefunden = await statement_service.zu_antworten([beitrag_a, beitrag_b, ohne])
+
+    assert [a.id for a in gefunden[beitrag_a]] == [erste]
+    assert {a.id for a in gefunden[beitrag_b]} == {erste, zweite}
+    assert ohne not in gefunden

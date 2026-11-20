@@ -111,6 +111,62 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 - **Löschen und Umstellen:** Die Zeile (und die in `art9_ohne_einwilligung`) geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
 
+## Nutzungsbedingungen auf derselben Seite
+
+Neue Konten stimmen nur noch einmal in der App zu (Entscheidung Maintainer, 20.11.2026):
+`/einwilligung` fragt, solange die Zustimmung zu den Nutzungsbedingungen in der App fehlt,
+beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
+
+- **Nutzungsbedingungen:** Pflicht, Link auf `/nutzungsbedingungen` mit Stand direkt am Häkchen.
+  Das Häkchen heißt nie „Einwilligung“; einen Knopf „Alle annehmen“ gibt es nicht. „Weiter“
+  ohne dieses Häkchen zeigt eine Fehlermeldung daran (`role="alert"`, per
+  `aria-describedby` verbunden) und setzt den Fokus auf das Häkchen.
+- **Art.-9-Einwilligung:** freiwillig, ohne Pflichtzeichen, „Freiwillig, nötig zum Mitmachen“
+  und der Hinweis auf den Widerruf direkt darunter (Art. 7 Abs. 3 S. 3 DSGVO). „Weiter“ geht mit
+  den Nutzungsbedingungen allein; dann merkt sich das Konto „ohne Einwilligung weiter“ wie oben (B2),
+  Lesen und Suchen gehen, gesperrt bleibt wie bisher. Wer schon eingewilligt hat, sieht nur das
+  erste Häkchen.
+- **Texte:** Die Sätze um die Häkchen stehen in
+  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung-texte.ts` (freigegeben am
+  20.11.2026); den Wortlaut der Einwilligung liefert weiter das Backend.
+- **Speichern:** Tabelle `nutzungsbedingungen_zustimmungen`, je Zustimmung eine Zeile mit Kennung
+  der Person, Zeitpunkt und Stand der Nutzungsbedingungen (Kennung `JJJJ-MM-TT` wie der Ordner in
+  `docs/nutzungsbedingungen-staende/`; `STAENDE`, `AKTUELLER_STAND` und `GELTENDE_STAENDE` in
+  `mvp/backend/semantic-search-service/app/domain/nutzungsbedingungen.py`). Es gilt die jüngste
+  Zeile; ein Widerruf ist nicht vorgesehen, wer nicht mehr will, lässt das Konto löschen. Die Zeilen
+  gehen mit dem Konto (`person_loeschen.sql`) und ziehen beim Umstellen der Kennungen mit.
+  Endpunkte: `GET`/`POST /api/v1/nutzungsbedingungen`; den Stand liefert auch
+  `GET /api/v1/art9-einwilligung` im Feld `nutzungsbedingungen`, damit die App nach dem Anmelden
+  mit einer Abfrage entscheidet.
+- **Hinführen:** `zurEinwilligungUmleiten` führt ohne Zustimmung immer auf `/einwilligung`, auch
+  wer zur Einwilligung schon entschieden hat. So werden Bestandskonten einmal neu gefragt
+  (Entscheidung Maintainer, 20.11.2026); ihre Zustimmung in Keycloak wird nicht übernommen.
+- **Sperren, serverseitig:** `require_art9_einwilligung` prüft vor der Einwilligung die Zustimmung
+  und antwortet ohne sie mit 403 `nutzungsbedingungen_fehlen`, an genau den Endpunkten in
+  `GESPERRT` (und beim Ausformulieren). Dazu sperrt `require_nutzungsbedingungen` allein, was
+  ohne Art.-9-Daten für andere Sichtbares anlegt oder fremde Inhalte beeinflusst: Themen
+  zuordnen und einen Antwortvorschlag an eine Aussage hängen (`NB_NUR` in
+  `tests/unit/api/test_nutzungsbedingungen_api.py`). Offen bleiben Melden, Widerspruch,
+  Feedback, eigene Einstellungen (Punkte, Abzeichen), Besuch zählen, Suchen, Löschen, Widerruf
+  und Konto beenden (Maßstab der juristischen Prüfung, 20.11.2026). Bewusst offen bleibt auch das
+  Zählen einer Kopie (`POST /api/v1/usage/content/{content_id}/usage`), obwohl es die Zähler
+  fremder Beiträge bewegt: Es zählt auch ohne Konto, eine Sperre nur für Angemeldete wäre
+  wirkungslos. Admins brauchen die Zustimmung auch auf ihrer Seite „Themen zuordnen“ (derselbe
+  Endpunkt). Die App behandelt das wie das fehlende
+  `art9_einwilligung_fehlt` (Hinweiskasten bzw. Snackbar, Weg auf `/einwilligung`).
+- **Neuer Stand der Nutzungsbedingungen:** in `STAENDE` eintragen und `AKTUELLER_STAND` setzen
+  (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite
+  passt). Reine Korrektur: in `GELTENDE_STAENDE` aufnehmen, niemand wird neu gefragt. Wesentlich:
+  `GELTENDE_STAENDE` nur mit dem neuen Stand, alle werden beim nächsten Besuch neu gefragt.
+- **Keycloak:** Die Pflichtaktion „Terms and Conditions“ entfällt mit 0.9.8: `PFLICHTAKTIONEN` in
+  `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend ins Archiv exportieren
+  (`docs/LOESCHKONZEPT.md`, Fristen), 0.9.8 live und die Seite prüfen, das Archiv direkt vor
+  dem Abschalten noch einmal schreiben, die Pflichtaktion im Realm abschalten, dann das
+  Attribut `terms_and_conditions` in der Datenbank von Keycloak löschen (Pflicht; die
+  Admin-Schnittstelle schreibt es nie; `docs/KEYCLOAK_REALM.md`, „Attribut der alten
+  Zustimmung löschen“). Bis zum Abschalten fragt Keycloak kurz doppelt; andersherum entstünden
+  Konten ohne Zustimmung.
+
 ## Wortlaut ändern
 
 Der Wortlaut steht an einer Stelle: `WORTLAUTE` in
@@ -135,13 +191,14 @@ Kennung (sonst 400): Das Backend meldet `eingewilligt: false`, das Frontend füh
 beim nächsten Besuch auf `/einwilligung`, und dort steht ein Hinweis auf den früheren Wortlaut
 mit dem Knopf „Frühere Einwilligung widerrufen“. Bis dahin ist gesperrt wie ohne Einwilligung.
 Tests: `test_einwilligung_zu_frueherem_wortlaut_fragt_neu`, `test_frueherer_wortlaut_gesperrt`,
-`test_nur_der_aktuelle_wortlaut_zaehlt` und die Spec „fragt neu, wer einem frueheren Wortlaut
+`test_geltend_sind_die_wortlaute_seit_dem_13_11` und die Spec „fragt neu, wer einem frueheren Wortlaut
 zugestimmt hat …“.
 
 - **Ohne neue Frage** (neue Kennung zu `GELTENDE_WORTLAUTE` hinzufügen): wenn die Änderung
   redaktionell ist oder nur zugunsten der Person wirkt: gleiche Zwecke, gleiche Datenarten, keine
   weiter gehenden Folgen des Widerrufs, etwa ein neuer Name des Menüpunkts (`2026-11-10`, #644)
-  oder das Löschen der Bewertungen (`2026-11-12`). Bis `2026-11-12` zählte jede Kennung.
+  oder das Löschen der Bewertungen (`2026-11-12`). Bis `2026-11-12` zählte jede Kennung; seit
+  `2026-11-19` stehen `2026-11-13` und `2026-11-19` in `GELTENDE_WORTLAUTE`.
 - **Mit neuer Frage** (`GELTENDE_WORTLAUTE` nur mit der neuen Kennung): neue Zwecke, neue
   Datenarten oder weiter gehende Folgen des Widerrufs. So bei `2026-11-13` (Löschauftrag,
   Entscheidung Maintainer, 13.11.2026).
@@ -187,14 +244,14 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
 - **Vision:** `docs/VISION.md`, Abschnitt mit „Meilensteine“ (Abzeichen nur mit Opt-in) und
   „Ranglisten“ (Zustimmung, Art. 9).
 - **Datenschutzerklärung:** `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`,
-  „Rückschlüsse auf deine politische Haltung“ → „Deine Einwilligung“ (Kennungsformat, Folgen,
+  „Rückschlüsse auf deine politische Haltung“ → „Deine Zustimmung und deine Einwilligung“ (Kennungsformat, Folgen,
   Widerruf) und „Punkte“ (Rechtsgrundlage, ohne Einwilligung keine Punkte); Spec
   `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.spec.ts`
   (`describe`-Blöcke „Rückschlüsse auf die politische Haltung“ und „Entdoppelte Nutzung, Punkte
   und Muster-Hinweise“).
 - **Lückenliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit
   #296) und `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md` (fasst „Deine
-  Einwilligung“ samt Widerrufsfolgen zusammen).
+  Einwilligung“, seit 0.9.8 „Deine Zustimmung und deine Einwilligung“, samt Widerrufsfolgen zusammen).
 
 - **Seite `/einwilligung`:** `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.html`
   zeigt den Wortlaut vom Backend, wiederholt aber in eigenen Sätzen, was ohne Einwilligung
@@ -221,4 +278,5 @@ Wortlaut vom Backend.
 | `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 bis zum Produktiv-Deploy von #644 (Daten nach dem Ausrollen eintragen); wer zugestimmt hat, bleibt eingewilligt |
 | `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 bis zum Produktiv-Deploy des Wortlauts `2026-11-12` (Daten nach dem Ausrollen eintragen) |
 | `2026-11-12` | Folgen des Widerrufs nach der juristischen Vorprüfung vom 12.11.2026: Die Bewertungen werden gelöscht, das Übrige bleibt bis zur eigenen Löschung oder Kontolöschung; sonst wortgleich mit `2026-11-10` (ein Test sichert das). Keine neuen Zwecke, und die Änderung wirkt nur zugunsten der Person, deshalb keine neue Frage | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) bis zum Produktiv-Deploy von `2026-11-13` |
-| `2026-11-13` | Löschauftrag nach dem Widerruf (#661, Entscheidung Maintainer, 13.11.2026): Binnen sieben Tagen zeigen Beiträge „ehemalige Person“, Einwürfe werden gelöscht, Sätze an fremden Einwürfen bleiben ohne Namen; was nach einer neuen Einwilligung beigetragen wird, bleibt unberührt. Ohne Spielelemente: Punktestand, Level, Quests, Meilenstein-Abzeichen, Freischaltungen und der Muster-Hinweis fallen weg, die Mitte lautet „Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter.“ (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO; Punkte und Meilensteine bekommen eine eigene, freiwillige Einwilligung, #668). Am 13.11.2026 vor jedem Release überschrieben (Entscheidung Maintainer). Sonst wortgleich mit `2026-11-12` (ein Test sichert das). Neue Frage, weil die Folgen des Widerrufs weiter gehen: Nur dieser Wortlaut steht in `GELTENDE_WORTLAUTE`, wer einem früheren zugestimmt hat, wird beim nächsten Besuch neu gefragt | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |
+| `2026-11-13` | Löschauftrag nach dem Widerruf (#661, Entscheidung Maintainer, 13.11.2026): Binnen sieben Tagen zeigen Beiträge „ehemalige Person“, Einwürfe werden gelöscht, Sätze an fremden Einwürfen bleiben ohne Namen; was nach einer neuen Einwilligung beigetragen wird, bleibt unberührt. Ohne Spielelemente: Punktestand, Level, Quests, Meilenstein-Abzeichen, Freischaltungen und der Muster-Hinweis fallen weg, die Mitte lautet „Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter.“ (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO; Punkte und Meilensteine bekommen eine eigene, freiwillige Einwilligung, #668). Am 13.11.2026 vor jedem Release überschrieben (Entscheidung Maintainer). Sonst wortgleich mit `2026-11-12` (ein Test sichert das). Neue Frage, weil die Folgen des Widerrufs weiter gehen: Nur dieser Wortlaut stand in `GELTENDE_WORTLAUTE`, wer einem früheren zugestimmt hat, wird beim nächsten Besuch neu gefragt | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) bis zum Produktiv-Deploy von `2026-11-19`; wer zugestimmt hat, bleibt eingewilligt |
+| `2026-11-19` | Klarer gefasst nach dem Entwurf der juristischen Prüfung vom 19.11.2026 (Entscheidung Maintainer beim Merge), nur zugunsten der Person: „erstellt daraus keine politischen Profile, bewertet keine politischen Überzeugungen“ statt „wertet sie nicht nach politischer Haltung aus“; „jederzeit mit Wirkung für die Zukunft“; vor „Mein Konto bleibt.“ neu „Was andere vor dem Widerruf nach der CC0-Erklärung rechtmäßig übernommen haben, kann Gut gesagt nicht zurückholen.“ Sonst wortgleich mit `2026-11-13` (ein Test sichert das). Gleiche Zwecke, Datenarten und Folgen, deshalb keine neue Frage: `GELTENDE_WORTLAUTE` = {`2026-11-13`, `2026-11-19`} | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |

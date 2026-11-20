@@ -106,7 +106,7 @@ describe('MobileMenuComponent', () => {
       const rundgang = spyOn(component.rundgang, 'emit');
 
       const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement;
-      expect(eintrag.textContent).toContain('Selbst beitragen (4 Schritte)');
+      expect(eintrag.textContent).toContain('Selbst beitragen (5 Schritte)');
       eintrag.click();
 
       expect(rundgang).toHaveBeenCalledWith('mitmachen');

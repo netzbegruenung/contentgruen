@@ -60,7 +60,7 @@ make help               # All commands
   `bash scripts/check.sh --integration`, or `--geaendert` before a push (TESTING_GUIDE.md)
 - ✅ **Dependency injection architecture**
 - ✅ **Pre-commit hooks integrated**
-- ✅ **Woodpecker CI for every pull request, GitHub Actions after the merge**
+- ✅ **Woodpecker CI for every pull request and after the merge**
 - ✅ **No external test dependencies**
 
 ## Legacy Commands
@@ -130,7 +130,7 @@ After architectural improvements:
 For questions or issues:
 1. Check the documentation guides
 2. Review existing test examples
-3. Create an issue on Forgejo with a minimal reproducible example (see `CONTRIBUTING.md`)
+3. Create an issue on Forgejo with a minimal reproducible example (see `.github/CONTRIBUTING.md`)
 
 ---
 

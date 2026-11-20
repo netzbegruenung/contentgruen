@@ -1,9 +1,9 @@
 <div class="report-dialog">
-  <h2 mat-dialog-title>Inhalt melden</h2>
+  <h2 mat-dialog-title>{{ istAussage ? 'Aussage melden' : 'Inhalt melden' }}</h2>
 
   <div mat-dialog-content *ngIf="!submitted">
     <p class="description">
-      Warum meldest du diesen Beitrag? Menschen aus unserem Team prüfen die Meldung.
+      Warum meldest du {{ istAussage ? 'diese Aussage' : 'diesen Beitrag' }}? Menschen aus unserem Team prüfen die Meldung.
     </p>
 
     <mat-form-field appearance="outline" class="full-width">
@@ -17,14 +17,14 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>{{ begruendungPflicht ? 'Warum ist der Beitrag rechtswidrig?' : 'Beschreibung (optional)' }}</mat-label>
+      <mat-label>{{ begruendungPflicht ? (istAussage ? 'Warum ist die Aussage rechtswidrig?' : 'Warum ist der Beitrag rechtswidrig?') : 'Beschreibung (optional)' }}</mat-label>
       <textarea
         matInput
         name="beschreibung"
         [(ngModel)]="description"
         [required]="begruendungPflicht"
         rows="4"
-        [placeholder]="begruendungPflicht ? 'Welches Gesetz verletzt er, und wodurch?' : 'Was genau stimmt nicht?'"></textarea>
+        [placeholder]="begruendungPflicht ? (istAussage ? 'Welches Gesetz verletzt sie, und wodurch?' : 'Welches Gesetz verletzt er, und wodurch?') : 'Was genau stimmt nicht?'"></textarea>
     </mat-form-field>
 
     <!-- Angemeldete nicht nach dem Namen fragen: Die Meldung haengt an ihrem Konto (B17) -->
@@ -83,7 +83,7 @@
   <div mat-dialog-content *ngIf="submitted" class="success-message" role="status" tabindex="-1" #bestaetigung>
     <mat-icon class="success-icon">check_circle</mat-icon>
     <!-- Doppelmeldung: nichts Neues angelegt, keine Mail (Review zu #670) -->
-    <p *ngIf="schonGemeldet" data-testid="schon-gemeldet">Du hast diesen Beitrag schon gemeldet.</p>
+    <p *ngIf="schonGemeldet" data-testid="schon-gemeldet">Du hast {{ istAussage ? 'diese Aussage' : 'diesen Beitrag' }} schon gemeldet.</p>
     <ng-container *ngIf="!schonGemeldet">
       <p>Deine Meldung ist eingegangen.</p>
       <p class="sub-message">

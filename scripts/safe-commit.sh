@@ -2,7 +2,7 @@
 # Safe commit script that handles pre-commit hooks
 
 if [ -z "$1" ]; then
-    echo "Usage: ./safe-commit.sh \"commit message\""
+    echo "Usage: scripts/safe-commit.sh \"commit message\""
     exit 1
 fi
 

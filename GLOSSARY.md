@@ -102,6 +102,14 @@ _Avoid_: Klasse, Kategorie (die Kategorie A–E im Messset beschreibt die Textab
 Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende Beiträge hängen (oder dass keine passen), und an denen gemessen wird, wie gut die Suche findet: je Suchanfrage ein Treffer (der erste angezeigte Beitrag passt), ein Fehltreffer (er passt nicht, oder es wird etwas angezeigt, obwohl nichts passt) oder eine Suche ohne Treffer (nichts angezeigt). Grundlage für die Schwelle der Suche. Es misst auch die Zerfaserung: wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind, trotzdem eine neue Aussage ergeben. Regeln und Ergebnis in `tests/regression/SUCHTESTSET.md` des Semantic-Search-Service. Anders als das Messset misst es die ganze Suche, nicht Textpaare.
 _Avoid_: Testset (allein), Messset (das sind Textpaare)
 
+**Bezug**:
+Ob eine Aussage inhaltlich zu einer Suchanfrage passt und nicht nur im Satzbau oder in einem Schlagwort ähnelt („Open Source ist unsicher!“ und „Migranten machen unsere Städte unsicher.“). Die Suche prüft ihn bei Suchanfragen ab drei Wörtern an einer Untergrenze der Ähnlichkeit: Darunter zählt eine Aussage nicht als Treffer. Bei Behauptungen prüft knapp darüber das Modell der NLI-Stufe, ob es in einer Richtung etwas folgert. Ihre Antworten zeigt die Suche auch direkt nur, wenn sie selbst der Suchanfrage sehr ähnlich sind. Schlagwörter prüft sie nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Bezug“.
+_Avoid_: Relevanz (das ist das Gewicht einer Antwort an ihrer Aussage)
+
+**Inhaltstor**:
+Ob Suchanfrage und Treffer ein Inhaltswort teilen. Bei Suchanfragen ab drei Wörtern zählt ein Treffer knapp über der Schwelle nur, wenn ein Nomen oder Eigenname der Suchanfrage (als Lemma) in seiner Aussage, im Titel oder Text des Beitrags oder in den Aussagen steht, auf die er antwortet. Ergänzt den Bezug für Treffer, die er nicht sieht, etwa direkte Antworten von Aussagen außerhalb der fünf Aussagetreffer. Suchanfragen ohne Nomen und Schlagwörter prüft es nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Inhaltstor“.
+_Avoid_: Schlagwortfilter (es vergleicht Lemmata, nur im unsicheren Band), Thema (kein Themenmodell)
+
 **Fehltreffer**:
 Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird. Für die Suche selbst passt bei einem Fehltreffer etwas ausreichend (über der Schwelle); er zählt deshalb nie als Suche ohne Treffer.
 _Avoid_: falsch positiv
@@ -118,7 +126,7 @@ Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine S
 _Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)
 
 **NLI-Stufe**:
-Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen. In der Suche kann es die Polaritätsstrafe übernehmen (#574, schaltbar): Eine Aussage, die einer Suchanfrage in beiden Richtungen widerspricht, rückt nach hinten, und ihre Antworten zeigt die Suche nicht; Fragen und Schlagwörter prüft es dort nicht.
+Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen. In der Suche kann es die Polaritätsstrafe übernehmen (#574, schaltbar): Eine Aussage, die einer Suchanfrage in beiden Richtungen widerspricht, rückt nach hinten, und ihre Antworten zeigt die Suche nicht; Fragen und Schlagwörter prüft es dort nicht. Dasselbe Modell prüft auch den Bezug (siehe dort) knapp über dessen Untergrenze.
 _Avoid_: Paraphrasen-Erkennung, KI-Prüfung (es erzeugt keinen Text)
 
 **Bestätiger**:
@@ -165,12 +173,16 @@ Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitra
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
 **CC0-Hinweis**:
-Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu; beide sind verlinkt. Über ihn sind die Nutzungsbedingungen einbezogen (#415), nicht durch bloße Nutzung. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0; die Nutzungsbedingungen gelten, beide sind verlinkt. Bis zum Stand der Nutzungsbedingungen vom 19. November 2026 waren sie über ihn einbezogen (#415); seit dem Stand vom 20. November 2026 stimmt man ihnen mit dem Häkchen auf `/einwilligung` zu (NB §2). Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem nächsten Absenden unter dem CC0-Hinweis, NB §10); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem Häkchen auf `/einwilligung`, NB §10; bis zum Stand vom 19. November 2026 mit dem nächsten Absenden unter dem CC0-Hinweis); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
+
+**Zustimmung zu den Nutzungsbedingungen**:
+Die Annahme der Nutzungsbedingungen durch eine angemeldete Person, in der App mit einem eigenen, nicht vorbelegten Häkchen auf `/einwilligung`, zusammen mit, aber getrennt von der Art.-9-Einwilligung (Entscheidung Maintainer, 20.11.2026). Sie ist Pflicht, um mit Konto beizutragen und zu bewerten, und ein Vertrag (Art. 6 Abs. 1 lit. b DSGVO), keine Einwilligung. Gespeichert werden Person, Zeitpunkt und Stand der Nutzungsbedingungen (`nutzungsbedingungen_zustimmungen`). Bis 0.9.8 fragte die Keycloak-Pflichtaktion „Terms and Conditions“; sie entfällt. Ablauf: `docs/ART9_EINWILLIGUNG.md`, „Nutzungsbedingungen auf derselben Seite“.
+_Avoid_: NB-Einwilligung, Consent, Alle annehmen
 
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht oder nur in einfachen Fällen erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
@@ -205,7 +217,7 @@ Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort brauch
 _Avoid_: Statement, These, Angriff
 
 **Aussagekarte**:
-Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage und die Themen, im Fuß „Antworten“. Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
+Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage als Marke und die Themen, im Fuß „Antworten“ und ein Menü mit „Aussage melden“ (Angemeldete) und „Aussage entfernen“ (nur Admins, endgültig, nach Rückfrage). Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
 _Avoid_: Aussagezeile, Statement-Karte
 
 **Zu dieser Antwort**:
@@ -300,8 +312,12 @@ Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage g
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
-Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens zwei. Freie Schlagworte gibt es nicht.
+Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht. Jedes Thema hat ein Motiv, ein kleines Bild neben seinem Namen (Fluent Emoji wie bei den Meilensteinen, bei Europa eine eigene Zeichnung der Europaflagge); es ist rein dekorativ, der Name steht immer daneben.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
+
+**Album**:
+Die eigenen Beiträge in „Meine Beiträge“, als volle Karten, ab vier Beiträgen in einklappbaren Abschnitten je Thema der Aussage, auf die sie antworten, meistgenutzte zuerst; Beiträge ohne Thema stehen zuletzt unter „Ohne Thema“; bis drei Beiträge stehen die Karten ohne Abschnitte untereinander. Ein Beitrag, dessen Aussage mehrere Themen hat, steht in jedem dieser Abschnitte. Oben ein Deckel mit der Zahl der Beiträge, ihrer Nutzung und der Themen; ohne jede Nutzung steht dort statt „0× genutzt“ der nächste Meilenstein, ohne Meilensteine (Punkte aus oder keine Einwilligung) groß die Zahl der Beiträge und Themen. Ab sieben Beiträgen gibt es eine Suche nur über die eigenen Beiträge.
+_Avoid_: Sammlung, Galerie, Profil
 
 **Zuordnungsart**:
 Wie ein Thema an eine Aussage kam: von Hand durch eine Person oder später durch eine Automatik. Wer zugeordnet hat und wann, wird nicht gespeichert.
@@ -349,11 +365,11 @@ Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen a
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
-Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein Titel als Frage (nur bei behauptenden Titeln, Kommentar und Hintergrundinfo; es zählt nur das Fragezeichen am Ende) und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld; die Karte prüft diese Regel nicht, sie kennt die Herkunft beim Gegenlesen nicht). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
+Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein Titel als Frage (nur bei behauptenden Titeln, Kommentar und Hintergrundinfo; es zählt nur das Fragezeichen am Ende) und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld; die Karte prüft diese Regel nicht, sie kennt die Herkunft beim Gegenlesen nicht). Dazu fünf Regeln zum Inhalt aus der Gegenlesen-Messung an 535 KI-Inputs (19.11.2026): ein Scheinbeleg („Studien zeigen“ ohne Ziffer, Jahr oder genannte Quelle im selben oder nächsten Satz), eine Herkunft ohne Fundstelle (nur eine Startseite oder ein lokaler Pfad; zählt wie eine fehlende Herkunft und ersetzt bei Zahlen deren Anmerkung, nur im Formular), ein Erlebnis ohne Platzhalter („mein Nachbar“, „bei uns im Dorf“ außerhalb von „[Hier …]“; ohne Abzug), Häme („Aber klar, …“, 🙄) und eine Floskel am Satzanfang („Im Alltag zeigt sich, dass …“). Beim Zweck „Für Gleichgesinnte“ zieht die Parteistimme nicht ab, und Häme zählt nur, wenn sie die angesprochene Person trifft („du“, „dein“). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
 _Avoid_: Prüfung, Lektorat, Check, Validierung
 
 **Anmerkung**:
-Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
+Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht. Die meisten ziehen von der Güte ab; das Erlebnis ohne Platzhalter und die Parteistimme bei Gleichgesinnten sind Anmerkungen ohne Abzug.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
 **Sprachhinweis**:
@@ -365,7 +381,7 @@ Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Komme
 _Avoid_: Zusammenfassung, KI-Vorschlag (der kommt von einem Sprachmodell), Zuschnitt
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Eine E-Mail-Adresse braucht es nur für die Mails an die Person: Den Eingang bestätigt die App sofort und, mit Adresse, auch eine Mail; die Entscheidung über die Meldung (gesperrt, abgewiesen oder Beitrag entfernt) samt den Möglichkeiten, dagegen vorzugehen, kommt per Mail, sobald ein Admin entscheidet oder der Beitrag endgültig entfernt wird. Ohne eingerichteten Mailversand teilt ein Admin sie per Hand mit.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist; auch eine Aussage lässt sich so melden (Aussagekarte), ein Admin kann sie dann endgültig entfernen. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Eine E-Mail-Adresse braucht es nur für die Mails an die Person: Den Eingang bestätigt die App sofort und, mit Adresse, auch eine Mail; die Entscheidung über die Meldung (gesperrt, abgewiesen oder Beitrag entfernt) samt den Möglichkeiten, dagegen vorzugehen, kommt per Mail, sobald ein Admin entscheidet oder der Beitrag endgültig entfernt wird. Ohne eingerichteten Mailversand teilt ein Admin sie per Hand mit.
 _Avoid_: Report, Flag, Beschwerde
 
 **Erklärung guten Glaubens**:
@@ -391,6 +407,10 @@ _Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
 **Suchanfrage**:
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
+
+**Testeingabe**:
+Eine Suchanfrage, die nur ausprobiert, grüßt oder nach der App fragt: die ganze Eingabe ist, klein geschrieben und ohne Satzzeichen am Ende, genau ein Wort der Liste („test“, „hallo“, „hilfe“, „was ist das“ …; im Code `TESTEINGABEN`), dazu nur Ziffern oder ein einzelnes wiederholtes Zeichen ab drei Zeichen („1234“, „xxxx“) und eine Eingabe nur aus Satzzeichen („?“). Statt Treffern zeigt die Ergebnisseite eine freundliche Karte mit einem zufälligen Text und einem Beispiel zum Suchen. Gesucht wird nicht: Es entsteht keine Aussage, keine Suche ohne Treffer und kein Suchereignis, und nichts landet in „Hier fehlt eine Antwort“. Steht das Wort nur in einer längeren Eingabe („Testergebnis Corona“), wird normal gesucht.
+_Avoid_: Spam, Unsinnseingabe, Leersuche
 
 **Vormoderation**:
 Die Prüfung einer unbeantworteten Suchanfrage durch das Moderationsteam (die Admins), bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; das Moderationsteam gibt sie frei oder lehnt sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine ungeprüfte oder abgelehnte bleibt unsichtbar. Sie gilt dann auch nicht als dieselbe Aussage, wenn jemand den gleichen Text als Aussage anlegt oder beantwortet: Es entsteht eine neue Aussage mit dessen Wortlaut, nur eine weitere Suche landet weiter auf ihr. Eine freigegebene, auf die jemand antwortet, gilt wie jede Aussage. Auch der Bestand bei der Einführung geht durch die Vormoderation; vorab freigegeben wurde nichts. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
@@ -437,7 +457,7 @@ Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Br
 _Avoid_: Session-ID
 
 **Meine Beiträge**:
-Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
+Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen als Album, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
@@ -558,7 +578,7 @@ Der eigene Bereich von Gut gesagt im Identitätsdienst Keycloak, der Realm „gu
 _Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
 
 **Einladung**:
-Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, dessen Link nie benutzt wurde (kein Passwort, Adresse nie bestätigt), wird nach der Frist im Löschkonzept gelöscht.
+Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Vor- und Nachname und Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen (der Link bestätigt dabei die Adresse), danach anmelden. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, für das nie ein Passwort gesetzt wurde (Link nie geöffnet oder danach abgebrochen), wird nach der Frist im Löschkonzept gelöscht.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
 **Warteliste**:
@@ -578,7 +598,7 @@ Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schre
 _Avoid_: Seed, Grundbestand, Demo-Inhalt
 
 **Startkonto**:
-Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Ein Startkonto ist ein Funktionskonto, keine Person: Sein Anzeigename ist der volle Name aus der Anmeldung, nicht Vorname und Initial. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
@@ -606,7 +626,7 @@ Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personen
 _Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
-Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und Initial des Nachnamens aus der Anmeldung, etwa „Anna B.“. Besucher sehen keine Anzeigenamen, und niemand sieht den vollen Namen aus dem Login.
+Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und Initial des Nachnamens aus der Anmeldung, etwa „Anna B.“. Besucher sehen keine Anzeigenamen, und niemand sieht den vollen Namen aus dem Login. Ausnahme Startkonto: Als Funktionskonto zeigt es Vor- und Nachname aus der Anmeldung ungekürzt, etwa „Redaktion Gut gesagt“.
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:

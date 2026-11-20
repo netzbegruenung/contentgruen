@@ -2,7 +2,8 @@
  * Zwei Abschnitte, ein Kartenstil (#620): jede Zeile weiss mit feinem Rand; die Typfarbe
  * steckt nur noch in der Kachel hinter dem Symbol. Am Handy alles untereinander, am Desktop
  * die Kette in einer Reihe und die Typen zweispaltig. Ohne eigene Hoechstbreite: so breit wie
- * Kopf und Rundgang-Band darueber, die Kanten fluchten (Designrunde 12.11.).
+ * Kopf und Rundgang-Band darueber, die Kanten fluchten (Designrunde 12.11.). Darunter, mittig
+ * und ruhiger, der Erstnutzer-Satz und der Knopf zu den eigenen Beitraegen (Sebastian 20.11.).
  */
 .typ-zeilen {
     display: flex;
@@ -32,9 +33,72 @@
     color: var(--akzent-schrift);
 }
 
-/* Optik aus der globalen .hinweis-box (styles.css) */
-.erstnutzer-satz {
+/*
+ * Die Kette: drei Schritte als geordnete Liste, die Pfeile dazwischen nur Schmuck (aria-hidden).
+ * Am Handy untereinander mit Pfeil nach unten, am Desktop nebeneinander mit Pfeil nach rechts.
+ * Der Pfeil sitzt mittig in der Luecke vor seinem Schritt, damit alle Kacheln gleich breit sind.
+ */
+.ketten-liste {
+    --ketten-luecke: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ketten-luecke);
     margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ketten-schritt {
+    position: relative;
+    display: flex;
+    min-width: 0;
+}
+
+.ketten-pfeil {
+    position: absolute;
+    top: calc(var(--ketten-luecke) / -2);
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    color: var(--akzent-schrift);
+    pointer-events: none;
+}
+
+/* Der Erstnutzer-Satz als eigener ruhiger Block: mittig, ohne Akzentstrich */
+.erstnutzer-satz {
+    max-width: 60ch;
+    margin: 0 auto;
+    padding: 12px 20px;
+    border-radius: var(--border-radius-medium);
+    background: var(--mulde);
+    color: var(--text-leise);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Meine Beitraege: kein Arbeitsschritt, deshalb ein Knopf statt einer Kachel, mittig abgesetzt */
+.meine-beitraege-zeile {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--linie);
+}
+
+.meine-beitraege-knopf {
+    /* Rand wie Felder und Kaesten (3:1), Schrift in der Akzentfarbe; nur Rand und Schrift,
+       keine Fuellung, die im Dunkeln aufgehellt werden muesste */
+    --mat-button-outlined-outline-color: var(--feldrand);
+    --mat-button-outlined-label-text-color: var(--akzent-schrift);
+    --mat-button-outlined-container-height: 48px;
+    --mat-button-outlined-container-shape: 24px;
+    --mat-button-outlined-horizontal-padding: 24px;
+    --mat-button-outlined-label-text-size: 16px;
+}
+
+/* Materials .mdc-button hebt den globalen Fokusrahmen auf; derselbe Ring wie an den Kacheln */
+.meine-beitraege-knopf:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }
 
 .typ-zeile {
@@ -122,16 +186,17 @@
     color: var(--text-leise);
 }
 
-.typ-pfeil {
-    flex-shrink: 0;
-    color: var(--akzent-schrift);
-}
-
 @media (min-width: 900px) {
-    /* Einwerfen, Fangkorb, Meine Beitraege nebeneinander: der Weg vom Rohen zum Ergebnis */
+    /* Einwerfen, Destillieren, Ausformulieren nebeneinander: der Weg vom Rohen zum Ergebnis */
     .ketten-liste {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ketten-pfeil {
+        top: 50%;
+        left: calc(var(--ketten-luecke) / -2);
+        transform: translate(-50%, -50%);
     }
 
     /* Die vier Typen zwei mal zwei */

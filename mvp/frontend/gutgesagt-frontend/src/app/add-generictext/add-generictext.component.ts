@@ -51,6 +51,7 @@ import {
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { HINTERGRUNDINFO_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
+import { herkunftOhneFundstelle } from '../beitragsformular/gegenlesen/herkunftsangaben';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
@@ -331,6 +332,11 @@ export class AddGenerictextComponent implements OnChanges {
    */
   get herkunftFehlt(): boolean {
     return !this.generictextForm.value.references?.length;
+  }
+
+  /** Die eingetragene Herkunft ist nur eine Startseite oder ein lokaler Pfad. */
+  get herkunftOhneFundstelle(): boolean {
+    return herkunftOhneFundstelle(this.generictextForm.value.references);
   }
 
   get titelLaenge(): number {

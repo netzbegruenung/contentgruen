@@ -32,7 +32,7 @@ class AussageThemenRepository:
         """
         Die Themen einer Aussage ersetzen, in einer Transaktion. Eine Sperre je
         Aussage haelt zwei gleichzeitige Zuordnungen auseinander; sonst blieben
-        die Themen beider stehen, mehr als zwei.
+        die Themen beider stehen, mehr als erlaubt.
         """
         with self.db.get_session() as session:
             self._sperren(session, statement_id)

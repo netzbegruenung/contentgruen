@@ -34,30 +34,31 @@ export interface NeuesEintrag {
 export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: number, aussagenMehr = false): NeuesEintrag[] {
   const liste: NeuesEintrag[] = [];
   if (nutzung && nutzung > 0) {
+    const nutzungWort = nutzung === 1 ? 'Nutzung deiner Beiträge' : 'Nutzungen deiner Beiträge';
     liste.push({
       art: 'nutzung',
       ziel: ROUTES.MEINE_BEITRAEGE,
       icon: 'trending_up',
       zahl: `${nutzung}`,
-      wort: 'Mal genutzt',
-      satz: `Deine Beiträge wurden ${nutzung} Mal genutzt`,
+      wort: nutzungWort,
+      satz: `${nutzung} ${nutzungWort}`,
     });
   }
   if (einwuerfe > 0) {
-    const wort = einwuerfe === 1 ? 'neuer Einwurf' : 'neue Einwürfe';
+    const wort = einwuerfe === 1 ? 'neuer Einwurf im Fangkorb' : 'neue Einwürfe im Fangkorb';
     liste.push({
       art: 'einwuerfe',
       ziel: '/fangkorb',
       icon: MENUE_ICONS.einwerfen,
       zahl: `${einwuerfe}`,
       wort,
-      satz: `${einwuerfe} ${wort} im Fangkorb`,
+      satz: `${einwuerfe} ${wort}`,
     });
   }
   if (aussagen > 0) {
     const zahl = aussagenMehr ? `${aussagen}+` : `${aussagen}`;
     const eine = aussagen === 1 && !aussagenMehr;
-    const wort = eine ? 'wartet auf Antwort' : 'warten auf Antwort';
+    const wort = eine ? 'Aussage ohne Antwort' : 'Aussagen ohne Antwort';
     liste.push({
       art: 'aussagen',
       ziel: ROUTES.HIER_FEHLT_EINE_ANTWORT,

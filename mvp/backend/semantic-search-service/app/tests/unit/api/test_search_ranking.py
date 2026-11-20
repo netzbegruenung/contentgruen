@@ -31,6 +31,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.search import router as search_router
+from core.config import settings
+from services.search.bezug import AussageBezug
 from services.search.polaritaet_nli import NliPolaritaet
 from services.search.search_orchestrator import (
     MINIMUM_SCORE_THRESHOLD,
@@ -160,6 +162,17 @@ def search_client():
         patch(
             "api.v1.search.get_nli_polaritaet",
             return_value=NliPolaritaet(None, "aus", 0.9),
+        ),
+        # Der Bezug wie im Standard (suche_bezug_nli aus), Grenzen aus core/config.py:
+        # Fuer Saetze gilt die Untergrenze (Schlagwoerter wie "klimaschutz" prueft er nicht).
+        patch(
+            "api.v1.search.get_aussage_bezug",
+            return_value=AussageBezug(
+                None,
+                settings.suche_bezug_ab,
+                settings.suche_bezug_sicher_ab,
+                settings.suche_bezug_folgerung_ab,
+            ),
         ),
         patch(
             "api.v1.search.get_polarity_filter_service",
@@ -569,3 +582,184 @@ def _commentary_search_hit(score):
         score=score,
         **_base_fields(),
     )
+
+
+@pytest.mark.api
+class TestBezug:
+    """
+    Fehltreffer von Produktion 0.9.0: "Open Source ist unsicher!" zeigte "Erkannt als
+    Migranten machen unsere Städte unsicher." (Aehnlichkeit 0,862, mit einem Kommentar
+    der Relevanz 1,0 kombiniert 0,903 > 0,82). services/search/bezug.py.
+    """
+
+    MIGRANTEN = "Migranten machen unsere Städte unsicher."
+
+    def _migranten(self, score, kommentar):
+        return _statement_result(
+            score, [_reply(ContentType.COMMENTARY, 1.0, kommentar)], self.MIGRANTEN
+        )
+
+    def test_fremde_behauptung_zeigt_keine_fremde_aussage(self, search_client):
+        kommentar = uuid.uuid4()
+        client = search_client(statement_results=[self._migranten(0.862, kommentar)])
+
+        resp = client.post(
+            SEARCH_URL, json={"query_text": "Open Source ist unsicher!", "limit": 10}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_antwort_der_fremden_aussage_kommt_auch_nicht_direkt(self, search_client):
+        # Produktion 0.9.2: "Open Source ist unsicher!" zeigte unter "Passt zu deinem
+        # Suchtext" einen kurzen Kommentar zur Migranten-Aussage, eigene Aehnlichkeit
+        # 0,83 ueber der Schwelle 0,82 des direkten Wegs.
+        kommentar = _commentary_search_hit(score=0.831)
+        client = search_client(
+            statement_results=[self._migranten(0.862, kommentar.id)],
+            direct_commentaries=[kommentar],
+        )
+
+        resp = client.post(
+            SEARCH_URL, json={"query_text": "Open Source ist unsicher!", "limit": 10}
+        )
+
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    @pytest.mark.parametrize("eigene,anzahl", [(0.859, 0), (0.86, 1), (0.879, 1)])
+    def test_antwort_mit_eigener_hoher_aehnlichkeit_kommt_direkt(
+        self, search_client, eigene, anzahl
+    ):
+        # Ausnahme ab suche_bezug_direkt_ab (0,86): 0,879 ist S133 "Durch die
+        # Zuwanderung gibt es mehr Kriminalität" mit einem Kommentar zur Migranten-Aussage.
+        kommentar = _commentary_search_hit(score=eigene)
+        client = search_client(
+            statement_results=[self._migranten(0.862, kommentar.id)],
+            direct_commentaries=[kommentar],
+        )
+
+        resp = client.post(
+            SEARCH_URL,
+            json={"query_text": "Durch die Zuwanderung gibt es mehr Kriminalität"},
+        )
+
+        treffer = resp.json()["commentary_search_results"]
+        assert len(treffer) == anzahl
+        if treffer:
+            assert treffer[0]["statement_id"] is None  # ohne "Erkannt als"
+
+    def test_nur_direkt_nach_dem_modell_ebenso(self, search_client):
+        # S123 "Ein neues Handy lohnt sich nicht": Balkonsolar 0,881 verwirft das Modell
+        # (Folgerung 0,01/0,12), ihr Kommentar kam direkt mit 0,830.
+        from services.dieselbe_behauptung.regel import Richtung, Urteil
+
+        class Nli:
+            async def urteile(self, paare, warte_hoechstens=None):
+                return [
+                    Urteil(Richtung(0.01, 0.0), Richtung(0.12, 0.08)) for _ in paare
+                ]
+
+        kommentar = _commentary_search_hit(score=0.830)
+        aussage = _statement_result(
+            0.881,
+            [_reply(ContentType.COMMENTARY, 1.0, kommentar.id)],
+            "Balkonsolar lohnt sich nicht.",
+        )
+        client = search_client(
+            statement_results=[aussage], direct_commentaries=[kommentar]
+        )
+        with patch(
+            "api.v1.search.get_aussage_bezug",
+            return_value=AussageBezug(Nli(), 0.87, 0.92, 0.2),
+        ):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Ein neues Handy lohnt sich nicht", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_frage_bekommt_die_untergrenze(self, search_client):
+        client = search_client(statement_results=[self._migranten(0.822, uuid.uuid4())])
+
+        resp = client.post(
+            SEARCH_URL, json={"query_text": "Ist Open Source unsicher?", "limit": 10}
+        )
+
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_umformulierung_trifft_weiter(self, search_client):
+        kommentar = uuid.uuid4()
+        client = search_client(statement_results=[self._migranten(0.967, kommentar)])
+
+        resp = client.post(
+            SEARCH_URL,
+            json={"query_text": "Ausländer machen unsere Städte unsicher", "limit": 10},
+        )
+
+        data = resp.json()
+        assert data["commentary_search_results_count"] == 1
+        treffer = data["commentary_search_results"][0]
+        assert treffer["statement_text"] == self.MIGRANTEN
+        assert treffer["commentary_result"]["id"] == str(kommentar)
+
+    def test_schlagwort_bleibt_bei_der_schwelle(self, search_client):
+        # "Migration Kriminalitaet" (S98) ist keine Behauptung: nur die Schwelle zaehlt.
+        client = search_client(statement_results=[self._migranten(0.80, uuid.uuid4())])
+
+        resp = client.post(
+            SEARCH_URL, json={"query_text": "Migration Kriminalität", "limit": 10}
+        )
+
+        assert resp.json()["commentary_search_results_count"] == 1
+
+
+@pytest.mark.api
+class TestInhaltstor:
+    """
+    Produktion 0.9.3: "Open Source ist unsicher!" zeigte unter "Passt zu deinem
+    Suchtext" den Kommentar "Arbeitserlaubnis ist Schuld" (208 Zeichen, eigene
+    Aehnlichkeit 0,821). Seine Aussage war nicht unter den Aussagetreffern, der Bezug
+    pruefte sie nicht (services/search/inhaltstor.py).
+    """
+
+    def _tor(self, aussagen):
+        from services.search.inhaltstor import Inhaltstor
+        from tests.unit.services.test_inhaltstor import _Werkzeuge
+
+        return Inhaltstor(
+            _Werkzeuge(), AsyncMock(return_value=aussagen), 0.82, 0.92, 0.90
+        )
+
+    def test_fremder_kommentar_ausserhalb_der_aussagetreffer_kommt_nicht(
+        self, search_client
+    ):
+        from tests.unit.services.test_inhaltstor import (
+            ARBEITSERLAUBNIS_TEXT,
+            ARBEITSERLAUBNIS_TITEL,
+            FLUECHTLINGE,
+        )
+
+        kommentar = _commentary_search_hit(score=0.821)
+        kommentar.title, kommentar.text = ARBEITSERLAUBNIS_TITEL, ARBEITSERLAUBNIS_TEXT
+        client = search_client(statement_results=[], direct_commentaries=[kommentar])
+        aussage = MagicMock(text=FLUECHTLINGE)
+        with patch("api.v1.search.inhaltstor_fuer", return_value=self._tor([aussage])):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Open Source ist unsicher!", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_ohne_inhaltstor_kam_er_direkt(self, search_client):
+        # Gegenprobe: derselbe Aufbau ohne Tor zeigt den Kommentar (wie 0.9.3).
+        kommentar = _commentary_search_hit(score=0.821)
+        client = search_client(statement_results=[], direct_commentaries=[kommentar])
+        with patch("api.v1.search.inhaltstor_fuer", return_value=None):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Open Source ist unsicher!", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 1

@@ -570,3 +570,56 @@ class TestMitKommentar:
         assert await repository.mit_kommentar([self.AUSSAGE]) == {self.AUSSAGE}
         groessen = [len(c.kwargs["ids"]) for c in retrieve.call_args_list]
         assert groessen == [1, statement_repository._IDS_JE_ABRUF, 1]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_zu_antworten_blaettert_je_block_und_haengt_jede_aussage_einmal_an(
+    test_settings, test_embeddings_manager
+):
+    """
+    zu_antworten (Album): eine Abfrage je 100 Beitraege, durchgeblaettert. Eine Aussage,
+    die Beitraege aus zwei Bloecken beantwortet, kommt in beiden Abfragen und haengt je
+    Beitrag trotzdem einmal.
+    """
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock
+
+    from repositories.implementations.qdrant.statement_repository import (
+        ANTWORTEN_JE_ABFRAGE,
+        StatementRepository,
+    )
+
+    repository = StatementRepository(
+        test_settings, embeddings_manager=test_embeddings_manager
+    )
+    beitraege = sorted((uuid.uuid4() for _ in range(101)), key=str)
+    erster, letzter = beitraege[0], beitraege[-1]
+    aussage_id = uuid.uuid4()
+    punkt = SimpleNamespace(
+        id=str(aussage_id),
+        payload={
+            **create_base_content_fields(),
+            **create_statement_data(text="Radwege nehmen nur Parkplätze weg"),
+            "content_type": "statement",
+            "antwort_ids": [str(erster), str(letzter)],
+        },
+    )
+    # Erster Block: zwei Seiten (die zweite leer), zweiter Block: eine Seite.
+    scroll = AsyncMock(side_effect=[([punkt], "weiter"), ([], None), ([punkt], None)])
+    repository._shared_manager = MagicMock(
+        async_client=MagicMock(scroll=scroll), collection_name="test"
+    )
+
+    ergebnis = await repository.zu_antworten(beitraege)
+
+    assert scroll.await_count == 3
+    blocks = [
+        aufruf.kwargs["scroll_filter"].must[1].match.any
+        for aufruf in scroll.await_args_list
+    ]
+    assert len(blocks[0]) == ANTWORTEN_JE_ABFRAGE and len(blocks[2]) == 1
+    assert scroll.await_args_list[1].kwargs["offset"] == "weiter"
+    assert [a.id for a in ergebnis[erster]] == [aussage_id]
+    assert [a.id for a in ergebnis[letzter]] == [aussage_id]
+    assert set(ergebnis) == {erster, letzter}

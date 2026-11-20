@@ -12,6 +12,7 @@ Behavior is intentionally identical to the prior hand-rolled branches; the searc
 characterization test (tests/unit/api/test_search_ranking.py) pins it.
 """
 
+import math
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
@@ -96,7 +97,10 @@ class SearchOrchestrator:
         usage_service,
         voting_service,
         schwelle: float = MINIMUM_SCORE_THRESHOLD,
+        inhaltstor=None,
     ):
+        # services/search/inhaltstor.py; None: aus (Tests, Aufrufer ohne Suchanfrage).
+        self._inhaltstor = inhaltstor
         # Treffer bis einschliesslich dieser Schwelle fallen weg. Der Dienst nutzt immer
         # MINIMUM_SCORE_THRESHOLD; das Suchtestset (tests/regression/suche_messen.py)
         # laesst je zu messender Schwelle einen eigenen Orchestrator laufen.
@@ -107,9 +111,14 @@ class SearchOrchestrator:
         self._reference_service = reference_service
         self._usage_service = usage_service
         self._voting_service = voting_service
-        # Antworten von Aussagen, die der Suchanfrage widersprechen (#574): Sie kommen
-        # auch nicht ueber den direkten Weg zurueck.
-        self._ausgeschlossen: set = set()
+        # Antworten von Aussagen, die der Suchanfrage widersprechen (#574) oder keinen
+        # Bezug zu ihr haben (services/search/bezug.py): Sie kommen nicht ueber den
+        # direkten Weg zurueck, ausser ihr Rohscore erreicht den Wert hier (ohne Bezug:
+        # suche_bezug_direkt_ab; bei Widerspruch nie, math.inf). Haengt eine Antwort an
+        # mehreren solchen Aussagen, gilt das Strengere. Hat eine weitere Aussage mit
+        # Bezug sie unter der Schwelle, bleibt sie trotzdem ausgeschlossen (bewusst:
+        # lieber keine Antwort als eine fragliche).
+        self._ausgeschlossen: Dict[object, float] = {}
         # Per-type result buckets, preserving spec order.
         self._results: Dict[ContentType, List] = {
             spec.content_type: [] for spec in specs
@@ -179,13 +188,17 @@ class SearchOrchestrator:
         statement_index_results: List,
         limit: int,
         polarity_metadata: dict,
+        query_text: Optional[str] = None,
     ) -> None:
         for statement_result in statement_index_results:
             polarity_info = polarity_metadata.get(statement_result.id)
             if polarity_info is not None and polarity_info.antworten_ausschliessen:
-                self._ausgeschlossen.update(
-                    r.id for r in statement_result.replysuggestions
-                )
+                ab = polarity_info.antworten_direkt_ab
+                for r in statement_result.replysuggestions:
+                    self._ausgeschlossen[r.id] = max(
+                        self._ausgeschlossen.get(r.id, -math.inf),
+                        math.inf if ab is None else ab,
+                    )
             for replysuggestion in statement_result.replysuggestions:
                 spec = self._specs.get(replysuggestion.content_type)
                 combined_score = (
@@ -218,6 +231,21 @@ class SearchOrchestrator:
                         f"{statement_result.id}). Error: {type(e).__name__}"
                     )
                     continue
+
+                # Im unsicheren Band nur mit gemeinsamem Inhaltswort.
+                if self._inhaltstor is not None and query_text:
+                    aehnlichkeit = getattr(statement_result, "aehnlichkeit", None)
+                    if not self._inhaltstor.aussage_zaehlt(
+                        query_text,
+                        (
+                            statement_result.score
+                            if aehnlichkeit is None
+                            else aehnlichkeit
+                        ),
+                        statement_result.text,
+                        content_result,
+                    ):
+                        continue
 
                 await self._enrich_references(content_result)
 
@@ -265,7 +293,9 @@ class SearchOrchestrator:
             for content_result in direct_results:
                 if content_result.id in statement_based_ids:
                     continue
-                if content_result.id in self._ausgeschlossen:
+                if content_result.score < self._ausgeschlossen.get(
+                    content_result.id, -math.inf
+                ):
                     continue
 
                 # Der Schwellwert entscheidet ueber die Aufnahme und prueft deshalb
@@ -275,6 +305,13 @@ class SearchOrchestrator:
                 # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
                 # konnte dadurch nie etwas liefern.
                 if content_result.score <= self._schwelle:
+                    continue
+
+                # Im unsicheren Band nur mit gemeinsamem Inhaltswort, auch mit den
+                # Aussagen, auf die der Beitrag antwortet (Inhaltstor).
+                if self._inhaltstor is not None and not (
+                    await self._inhaltstor.direkt_zaehlt(query_text, content_result)
+                ):
                     continue
 
                 # Die Penalty bleibt und wirkt weiter auf das Ranking: ein direkter
@@ -358,6 +395,13 @@ class SearchOrchestrator:
         )
         for result in treffer:
             result.themen = themen_dtos(themen.get(result.statement_id, ()))
+
+    def themen_unbekannt(self) -> None:
+        """Nach einem Fehler beim Nachschlagen: Treffer mit Aussage tragen themen None."""
+        for spec in self._specs.values():
+            for result in self._results[spec.content_type]:
+                if result.statement_id is not None:
+                    result.themen = None
 
     def inhalte(self) -> List:
         """Die Beitraege aller Treffer, als Response-DTOs."""

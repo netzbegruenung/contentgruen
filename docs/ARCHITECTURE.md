@@ -249,6 +249,12 @@ Container names are the same in dev, test and production: `gutgesagt-app-postgre
   copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
   configuration, which lives outside this repository.
 
+- `STARTKONTEN` - Optional, comma-separated user ids of Startkonten (`GLOSSARY.md`), compared
+  like `ADMIN_USER_IDS`. Only for these function accounts the BFF also sends the unshortened
+  name in `X-User-Full-Name` ("Redaktion Gut gesagt" instead of "Redaktion G."); the full name
+  of a person never leaves the BFF. Set it to the same value as `SEMANTIC_SEARCH_STARTKONTEN`,
+  which the search service checks as well. Unset: every name stays shortened.
+
 ### Semantic Search
 
 All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
@@ -282,6 +288,23 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   unavailable or busy model (2 s) fall back to the word lists. Same model object as the
   NLI-Stufe, so no extra RAM while the NLI-Stufe is not `aus` (otherwise this switch loads the
   model itself); measured in `tests/regression/SUCHTESTSET.md`.
+- `SEMANTIC_SEARCH_SUCHE_BEZUG_AB` - for a query of three words or more, an Aussage below this
+  embedding similarity (default 0.87) is no hit (`services/search/bezug.py`); its answers come
+  via the direct path only with their own raw similarity of at least
+  `SEMANTIC_SEARCH_SUCHE_BEZUG_DIREKT_AB` (0.86). For a statement query (no
+  question) `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI` (default `true`) also asks the first NLI model
+  about Aussagen up to `SEMANTIC_SEARCH_SUCHE_BEZUG_SICHER_AB` (0.92): they count only with
+  entailment of at least `SEMANTIC_SEARCH_SUCHE_BEZUG_FOLGERUNG_AB` (0.2) in one direction; the
+  search waits for it (2 s at most, then they count). Measured in
+  `tests/regression/SUCHTESTSET.md`, section Bezug.
+- `SEMANTIC_SEARCH_SUCHE_INHALTSTOR` - for a query of three words or more (default `true`),
+  a hit in the uncertain band counts only if query and hit share a content word: a lemma of
+  the query's nouns or proper nouns in the Aussage, the contribution's title or text, or on
+  the direct path the Aussagen it answers (`antwort_ids`) (`services/search/inhaltstor.py`).
+  Band: Aussage similarity from `…_INHALTSTOR_AB` (0.82) to below `…_INHALTSTOR_AUSSAGE_BIS`
+  (0.92), direct raw score above 0.82 to below `…_INHALTSTOR_DIREKT_BIS` (0.90). spaCy model
+  of Gegenlesen; open without nouns or before the model is loaded. Measured in
+  `tests/regression/SUCHTESTSET.md`, section Inhaltstor.
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts
@@ -298,7 +321,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `mvp/scripts/setup/check-environment.sh/.bat` - Checks prerequisites
 - `mvp/scripts/utils/switch-to-docker.sh/.bat` and `switch-to-local.sh/.bat` - Switch the active frontend environment config
 - `mvp/scripts/utils/clean-all.sh/.bat` - Removes containers, volumes and build artifacts
-- `safe-commit.bat/.sh` - Handles pre-commit hooks
+- `scripts/safe-commit.bat/.sh` - Handles pre-commit hooks
 
 ## Network Architecture
 
@@ -365,8 +388,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - Woodpecker checks every pull request on Forgejo (`.woodpecker/ci.yaml`, required status
   for `main`, see `docs/CI.md`)
 - Image builds after a green `ci` run: Woodpecker (`.woodpecker/build.yaml` on `main`,
-  `release.yaml` on `v*` tags), for now next to GitHub Actions on the mirror
-  (`.github/workflows/build.yml`, `release.yml`) until the switch in `docs/CI.md`
+  `release.yaml` on `v*` tags); the GitHub mirror runs no CI
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
 - Test: runs the floating `:main` tag, rolled out manually by the operators
 - Production: pins a release version (`:X.Y.Z`) by digest; how it updates: `docs/DEPLOYMENT.md`, "Updating Production"

@@ -10,16 +10,27 @@
 
 <!-- Loading Spinner -->
 <app-loading-spinner
-    [loading]="(loading$ | async) || false"
+    [loading]="!ohneSuche && ((loading$ | async) || false)"
     message="Suche läuft...">
 </app-loading-spinner>
 
 <!-- Error Message -->
 <app-error-message
-    [error]="(error$ | async) || ''"
+    [error]="ohneSuche ? '' : ((error$ | async) || '')"
     [showRetry]="true"
     [retryAction]="retrySearch">
 </app-error-message>
+
+<!-- Testeingabe ("test", "hallo", "hilfe"; GLOSSARY): statt Treffern eine freundliche Karte, gesucht
+     wird nicht. Die Region steht immer da, damit Screenreader die Karte ankuendigen (aria-live). -->
+<div class="testeingabe-region" aria-live="polite">
+    <section class="testeingabe-karte hinweis-box" *ngIf="testeingabe">
+        <p class="testeingabe-text">{{ testeingabe }}</p>
+        <p class="testeingabe-aufruf">{{ testeingabeAufruf }}:</p>
+        <a class="erkannt-chip testeingabe-beispiel" [routerLink]="['/result']"
+           [queryParams]="{ searchQuery: testeingabeBeispiel }">„{{ testeingabeBeispiel }}“</a>
+    </section>
+</div>
 
 <!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
@@ -37,7 +48,7 @@
 </ng-template>
 
 <!-- Eine Darstellung fuer Handy und Desktop: Zeile "Erkannt als", beste Antwort, Rest eingeklappt -->
-<ng-container *ngIf="!(loading$ | async) && (searchResponse$ | async) && angezeigt">
+<ng-container *ngIf="!ohneSuche && !(loading$ | async) && (searchResponse$ | async) && angezeigt">
 
     <!-- Ohne Treffer: kein leerer Kasten, sondern Antworten, aehnliche Aussagen und "Oft gesucht" -->
     <section class="content-section" *ngIf="!hatTreffer">
@@ -91,6 +102,9 @@
                 <mat-icon aria-hidden="true">share</mat-icon>
             </button>
         </div>
+        <!-- Die Themen der erkannten Aussage; Angemeldete ordnen sie hier zu (wie in "Hier fehlt eine Antwort") -->
+        <app-aussage-themen *ngIf="erkannteThemen" class="erkannt-themen" [aussage]="erkannteThemen"
+                            (themenChange)="erkannteThemenGeaendert($event)"></app-aussage-themen>
         <ul class="erkannt-liste" id="erkannt-liste" *ngIf="erkannt && alternativen.length" [hidden]="!alternativenOffen">
             <li *ngFor="let a of alternativen">
                 <a class="erkannt-chip" [routerLink]="['/result']" [queryParams]="{ searchQuery: a.text }">{{ a.text }}</a>
@@ -104,7 +118,10 @@
         <!-- Je Aussage eine Gruppe: die erkannte zuerst, direkte Treffer zuletzt. Die Gruppe
              nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. Gibt es eine
              erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
-        <ng-template #gruppeTpl let-gruppe>
+        <!-- imBereich: die Gruppe steht im aufgeklappten Bereich "Weitere, weniger passende
+             Treffer". Dort sind die Karten offen; wer den Bereich aufklappt, will die Treffer
+             sehen, nicht noch einmal jede Karte einzeln aufklappen (kein verschachteltes Einklappen). -->
+        <ng-template #gruppeTpl let-gruppe let-imBereich="imBereich">
         <!-- Am Desktop zwei Spalten (Maintainer 18.11.): oben links die beste Antwort, rechts daneben
              "Zu dieser Antwort", darunter ueber die volle Breite die weiteren Karten zu zweit. Die
              Reihenfolge im DOM ist die Lesereihenfolge: beste, Kasten, weitere. -->
@@ -141,7 +158,7 @@
                     <!-- Desktop ab 1024 px (Maintainer 18.11.): die naechsten vier offen, zu zweit, erst dann eingeklappte -->
                     <app-kartenliste *ngIf="block.offen.length" class="offene-karten" [daten]="block.offen" [schlicht]="true"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
-                    <app-kartenliste *ngIf="block.weitere.length" class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="true"
+                    <app-kartenliste *ngIf="block.weitere.length" class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="!imBereich"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 </ng-container>
                 <button *ngIf="block.mehrText" type="button" class="alle-zeigen"
@@ -168,7 +185,7 @@
             </button>
             <div id="weitere-treffer" class="weitere-liste" *ngIf="weitereOffen || !hauptGruppen.length">
                 <ng-container *ngFor="let gruppe of weitereGruppen; trackBy: nachGruppe">
-                    <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe }"></ng-container>
+                    <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe, imBereich: !!hauptGruppen.length }"></ng-container>
                 </ng-container>
             </div>
         </section>

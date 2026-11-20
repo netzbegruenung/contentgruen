@@ -97,6 +97,35 @@ def test_karte_liest_ohne_herkunft_gegen():
     assert {"gedankenstrich", "parteistimme", "titel_frage"} <= set(
         beitrag.guete_erfuellt
     )
+    # Die Fundstelle braucht die Herkunft, das Erlebnis zieht nie ab: beides
+    # kein Kriterium der Karte. Die neuen Regeln zum Inhalt schon.
+    assert "herkunft_ohne_fundstelle" not in beitrag.guete_erfuellt
+    assert "erlebnis" not in beitrag.guete_erfuellt
+    assert {"scheinbeleg", "haeme", "floskel"} <= set(beitrag.guete_erfuellt)
+
+
+@pytest.mark.parametrize(
+    "zweck, erwartet",
+    [
+        ("eigene_leute", "eigene_leute"),
+        (SimpleNamespace(value="kommentarspalte"), "kommentarspalte"),
+        (None, None),
+    ],
+)
+def test_zweck_geht_mit_wie_im_formular(zweck, erwartet):
+    # Für Gleichgesinnte ist die Parteistimme eine Anmerkung ohne Abzug, auch auf der Karte.
+    gegenlesen = _gegenlesen(arten=())
+    service, _ = _service(gegenlesen)
+    service.ergaenzen([_beitrag(zweck=zweck)])
+    assert gegenlesen.gegenlesen.call_args.kwargs["zweck"] == erwartet
+
+
+def test_zwischenspeicher_trennt_nach_zweck():
+    gegenlesen = _gegenlesen(arten=())
+    service, _ = _service(gegenlesen)
+    service.ergaenzen([_beitrag(zweck="eigene_leute")])
+    service.ergaenzen([_beitrag(zweck="kommentarspalte")])
+    assert gegenlesen.gegenlesen.call_count == 2
 
 
 def test_startkonten_gehen_an_die_abfrage():

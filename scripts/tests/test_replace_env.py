@@ -1,7 +1,7 @@
 """
 replace-env.sh setzt Commit und Version fuer den Footer in index.html ein, nicht in die
-*.js-Dateien: Deren Name entsteht beim Build vor der Ersetzung, nginx liefert sie mit
-"expires 1y" aus, und ein Browser zeigte so den Commit eines alten Builds (18.11.2026).
+*.js-Dateien: Deren Name entsteht beim Build vor der Ersetzung, nginx laesst sie ein Jahr
+im Cache, und ein Browser zeigte so den Commit eines alten Builds (18.11.2026).
 index.html liefert nginx ohne Cache. Der Test laesst das Skript gegen ein temporaeres
 Verzeichnis laufen (HTML_DIR) und liest die echte index.html aus src/.
 """

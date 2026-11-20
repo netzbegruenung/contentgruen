@@ -7,6 +7,12 @@ Schluessel ist das, was an einer Aussage gespeichert wird; der Name ist nur die
 Anzeige und darf sich aendern. Ein Schluessel, der wegfaellt, laesst seine
 Zuordnungen in der Datenbank stehen; sie werden dann nicht mehr angezeigt
 (AussageThemenService).
+
+Das Motiv ist der Pfad eines SVG unter public/ im Frontend, etwa "themen/klima.svg":
+ein Fluent-Emoji im Stil der Meilensteine, bei Europa eine eigene Zeichnung
+(public/themen/HINWEIS-EUROPA.txt). Es ist rein dekorativ, der Name steht immer
+daneben. Dass jedes Thema eins hat und die Datei existiert, pruefen
+tests/unit/domain/test_themen.py und scripts/tests/test_themen_motive.py.
 """
 
 import json
@@ -19,8 +25,8 @@ from pydantic import AfterValidator
 
 from core.fehler import Validierungsfehler
 
-# Glossar: "eine Aussage hat hoechstens zwei".
-HOECHSTENS_JE_AUSSAGE = 2
+# Glossar: "eine Aussage hat hoechstens drei".
+HOECHSTENS_JE_AUSSAGE = 3
 
 _DATEI = Path(__file__).with_name("themen.json")
 
@@ -29,6 +35,7 @@ _DATEI = Path(__file__).with_name("themen.json")
 class Thema:
     schluessel: str
     name: str
+    motiv: str
 
 
 class Zuordnungsart(StrEnum):
@@ -41,12 +48,14 @@ class Zuordnungsart(StrEnum):
 
 
 class ThemaUngueltig(Validierungsfehler):
-    """Ein Schluessel steht nicht in der Liste, oder es sind mehr als zwei."""
+    """Ein Schluessel steht nicht in der Liste, oder es sind mehr als drei."""
 
 
 def _laden() -> Tuple[Thema, ...]:
     with _DATEI.open(encoding="utf-8") as datei:
-        return tuple(Thema(e["schluessel"], e["name"]) for e in json.load(datei))
+        return tuple(
+            Thema(e["schluessel"], e["name"], e["motiv"]) for e in json.load(datei)
+        )
 
 
 THEMEN: Tuple[Thema, ...] = _laden()

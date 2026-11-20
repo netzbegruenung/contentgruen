@@ -73,7 +73,7 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren', 'meldungSchliessen']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren', 'meldungSchliessen', 'aussageEntfernen']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
@@ -155,6 +155,39 @@ describe('ContentModerationComponent', () => {
     expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1', 'unterstellung', 'Unterstellt Bosheit.');
     // Die Liste fragt mit Ansicht und Grenze; die Zahl der offenen (ZuTunService) zusätzlich still.
     expect(moderation.getReports.calls.allArgs().filter((args) => args[3] !== true).length).toBe(2);
+  });
+
+  describe('gemeldete Aussage', () => {
+    const AUSSAGE = () =>
+      meldung({ content_id: 'aussage-1', content_type: 'statement', content: { status: 'visible', text: 'Windräder töten die Vögel' } });
+
+    it('bietet "Aussage entfernen" nur bei Aussagen an', () => {
+      mitMeldungen([meldung()]);
+      expect(knopf('Aussage entfernen')).toBeUndefined();
+    });
+
+    it('entfernt eine gemeldete Aussage nach der Rückfrage endgültig und lädt neu', () => {
+      moderation.aussageEntfernen.and.returnValue(of({ success: true, message: '' }));
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+      mitMeldungen([AUSSAGE()]);
+
+      knopf('Aussage entfernen')!.click();
+
+      const daten = dialog.open.calls.mostRecent().args[1]!.data as { titel: string; text: string };
+      expect(daten.titel).toContain('endgültig');
+      expect(daten.text).toContain('„Windräder töten die Vögel“');
+      expect(moderation.aussageEntfernen).toHaveBeenCalledWith('aussage-1');
+      expect(moderation.getReports.calls.allArgs().filter((args) => args[3] !== true).length).toBe(2);
+    });
+
+    it('entfernt nichts, wenn die Rückfrage abgebrochen wird', () => {
+      dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+      mitMeldungen([AUSSAGE()]);
+
+      knopf('Aussage entfernen')!.click();
+
+      expect(moderation.aussageEntfernen).not.toHaveBeenCalled();
+    });
   });
 
   it('sperrt nicht, wenn der Dialog abgebrochen wird', () => {

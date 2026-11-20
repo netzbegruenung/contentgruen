@@ -82,6 +82,160 @@ describe('EinwilligungComponent', () => {
     http.verify();
   });
 
+  // Eine Seite fuer beides (Entscheidung Maintainer, 20.11.2026): zwei getrennte, nicht
+  // vorbelegte Haekchen, die Nutzungsbedingungen Pflicht, die Einwilligung freiwillig.
+  describe('mit Nutzungsbedingungen', () => {
+    const NB_URL = `${environment.baseUrl}/api/v1/nutzungsbedingungen`;
+    const NB_FEHLT = {
+      zugestimmt: false,
+      stand: null,
+      zugestimmt_am: null,
+      aktueller_stand: { kennung: '2026-11-19', stand: '19. November 2026' },
+    };
+
+    function haekchen(testid: string): HTMLInputElement {
+      return el().querySelector(`[data-testid=${testid}] input[type=checkbox]`) as HTMLInputElement;
+    }
+
+    /** Template-driven: ngModel meldet sich erst nach einem Takt am Formular an. */
+    async function anhaken(testid: string) {
+      await fixture.whenStable();
+      haekchen(testid).click();
+      fixture.detectChanges();
+    }
+
+    it('zeigt zwei getrennte Haekchen, keins angehakt, und einen Knopf "Weiter" ohne "Alle annehmen"', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+
+      expect(haekchen('nb-haekchen').checked).toBeFalse();
+      expect(haekchen('art9-haekchen').checked).toBeFalse();
+      expect(el().querySelector('[data-testid=nb-haekchen]')!.textContent).not.toContain('Einwilligung');
+      expect(el().textContent).toContain('Freiwillig, nötig zum Mitmachen');
+      expect(el().textContent).toContain('widerrufen');
+      expect(el().querySelector('a[href="/nutzungsbedingungen"]')).not.toBeNull();
+      expect(knopf('Weiter').disabled).toBeFalse();
+      expect(el().textContent).not.toContain('Alle annehmen');
+      expect(el().textContent).not.toContain('Ohne Einwilligung weiter');
+    });
+
+    it('ohne Haekchen der Nutzungsbedingungen: Fehlermeldung am Haekchen, Fokus dorthin, nichts gesendet', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('art9-haekchen');
+
+      knopf('Weiter').click();
+      fixture.detectChanges();
+
+      const fehler = el().querySelector('[data-testid=nb-fehler]');
+      expect(fehler?.getAttribute('role')).toBe('alert');
+      expect(haekchen('nb-haekchen').getAttribute('aria-describedby')).toContain('nb-fehler');
+      expect(document.activeElement).toBe(haekchen('nb-haekchen'));
+      http.expectNone(NB_URL);
+      http.expectNone({ method: 'POST', url: URL });
+
+      await anhaken('nb-haekchen');
+      expect(el().querySelector('[data-testid=nb-fehler]')).toBeNull();
+    });
+
+    it('nur Nutzungsbedingungen: stimmt zu, merkt "ohne Einwilligung" und geht weiter', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('nb-haekchen');
+
+      knopf('Weiter').click();
+      const nb = http.expectOne({ method: 'POST', url: NB_URL });
+      expect(nb.request.body).toEqual({ stand: '2026-11-19' });
+      nb.flush(null, { status: 204, statusText: 'No Content' });
+
+      const ohne = http.expectOne({ method: 'POST', url: `${URL}/ohne` });
+      expect(ohne.request.body).toEqual({ wortlaut: WORTLAUT.kennung });
+      ohne.flush(null, { status: 204, statusText: 'No Content' });
+      http.expectNone({ method: 'POST', url: URL });
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
+    });
+
+    it('beide Haekchen: erst die Nutzungsbedingungen, dann die Einwilligung', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('nb-haekchen');
+      await anhaken('art9-haekchen');
+
+      knopf('Weiter').click();
+      http.expectNone({ method: 'POST', url: URL });
+      http.expectOne({ method: 'POST', url: NB_URL }).flush(null, { status: 204, statusText: 'No Content' });
+      const einwilligung = http.expectOne({ method: 'POST', url: URL });
+      expect(einwilligung.request.body).toEqual({ wortlaut: WORTLAUT.kennung });
+      einwilligung.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
+    });
+
+    it('Nutzungsbedingungen gespeichert, Einwilligung 400: laedt neu, fragt nur noch die Einwilligung', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('nb-haekchen');
+      await anhaken('art9-haekchen');
+
+      knopf('Weiter').click();
+      http.expectOne({ method: 'POST', url: NB_URL }).flush(null, { status: 204, statusText: 'No Content' });
+      http.expectOne({ method: 'POST', url: URL }).flush({}, { status: 400, statusText: 'Bad Request' });
+      standLiefern(stand({ nutzungsbedingungen: { ...NB_FEHLT, zugestimmt: true, stand: '2026-11-19' } }));
+
+      expect(el().querySelector('[data-testid=wortlaut-geaendert]')).not.toBeNull();
+      expect(el().querySelector('[data-testid=nb-haekchen]')).toBeNull();
+      expect(knopf('Einwilligen und weiter')).toBeTruthy();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it('schon eingewilligt (Bestandskonto): nur das Haekchen der Nutzungsbedingungen', async () => {
+      starten();
+      standLiefern(
+        stand({ eingewilligt: true, wortlaut: WORTLAUT.kennung, eingewilligt_am: '2026-11-05T09:00:00Z', nutzungsbedingungen: NB_FEHLT }),
+      );
+
+      expect(el().querySelector('[data-testid=art9-haekchen]')).toBeNull();
+      expect(el().textContent).toContain('Deine Einwilligung zur Mitwirkung besteht weiter.');
+      await anhaken('nb-haekchen');
+      knopf('Weiter').click();
+      http.expectOne({ method: 'POST', url: NB_URL }).flush(null, { status: 204, statusText: 'No Content' });
+
+      http.expectNone({ method: 'POST', url: URL });
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
+    });
+
+    it('wer beides hat, sieht nichts Neues: den Stand mit dem Datum der Zustimmung', async () => {
+      starten();
+      standLiefern(
+        stand({
+          eingewilligt: true,
+          wortlaut: WORTLAUT.kennung,
+          eingewilligt_am: '2026-11-05T09:00:00Z',
+          nutzungsbedingungen: { ...NB_FEHLT, zugestimmt: true, stand: '2026-11-19', zugestimmt_am: '2026-11-20T09:00:00Z' },
+        }),
+      );
+
+      expect(el().querySelector('[data-testid=nb-haekchen]')).toBeNull();
+      expect(el().querySelector('[data-testid=nb-zugestimmt]')!.textContent).toContain('20.11.2026');
+      expect(knopf('Einwilligung widerrufen')).toBeTruthy();
+    });
+
+    it('Stand der Nutzungsbedingungen gilt nicht mehr (400): laedt neu und sagt es', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('nb-haekchen');
+
+      knopf('Weiter').click();
+      http.expectOne({ method: 'POST', url: NB_URL }).flush({}, { status: 400, statusText: 'Bad Request' });
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+
+      expect(el().querySelector('[data-testid=wortlaut-geaendert]')).not.toBeNull();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(haekchen('nb-haekchen').checked).toBeFalse();
+    });
+  });
+
   describe('Frage', () => {
     it('zeigt den Wortlaut vom Backend am Haekchen, nicht angehakt', () => {
       starten();
@@ -352,7 +506,7 @@ describe('EinwilligungComponent', () => {
       expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
     });
 
-    // 2026-11-13: Nur der aktuelle Wortlaut zaehlt; eine fruehere Einwilligung fragt neu
+    // Seit 2026-11-13 zaehlen nur GELTENDE_WORTLAUTE; eine fruehere Einwilligung fragt neu
     it('fragt neu, wer einem frueheren Wortlaut zugestimmt hat, und laesst ihn widerrufen', () => {
       starten(null);
       standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z' }));

@@ -198,7 +198,9 @@ class Settings(BaseSettings):
     keycloak_admin_client_id: Optional[str] = None
     keycloak_admin_client_secret: Optional[str] = None
     # Wohin der Link in der Mail "Passwort festlegen" danach fuehrt: Client der App und
-    # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
+    # ihre Adresse; der Link zeigt auf <app_url>/einladung/anmelden, die Seite startet
+    # gleich die Anmeldung (ANMELDEN_PFAD in infrastructure/keycloak_konten.py). Ohne
+    # beide endet er auf der Kontoseite von Keycloak.
     keycloak_app_client_id: Optional[str] = None
     app_url: Optional[str] = None
 
@@ -350,6 +352,38 @@ class Settings(BaseSettings):
     # Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Polaritaet mit NLI).
     suche_polaritaet_nli: NliModus = "schatten"
     suche_polaritaet_widerspruch_ab: float = Field(default=0.9, ge=0.0, le=1.0)
+    # Bezug (services/search/bezug.py), fuer Suchanfragen ab drei Woertern, an der
+    # Aehnlichkeit der Einbettung: Eine Aussage unter suche_bezug_ab zaehlt nicht als
+    # Aussagetreffer. Gegen "Erkannt als" mit einer fremden Aussage, die nur ein
+    # Schlagwort teilt ("Open Source ist unsicher!" zu "Migranten machen unsere Staedte
+    # unsicher.", 0,862). Bei einer Behauptung (keine Frage) zaehlt eine Aussage bis
+    # suche_bezug_sicher_ab zudem nur, wenn das NLI-Modell (NLI_MODELL) in einer Richtung
+    # mindestens suche_bezug_folgerung_ab Folgerung sieht (ohne Modell: zaehlt); das
+    # haelt auch gleich gebaute Saetze fern. suche_bezug_nli = false laesst nur die
+    # Untergrenze. Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Bezug).
+    suche_bezug_nli: bool = True
+    suche_bezug_ab: float = Field(default=0.87, ge=0.0, le=1.0)
+    suche_bezug_sicher_ab: float = Field(default=0.92, ge=0.0, le=1.0)
+    suche_bezug_folgerung_ab: float = Field(default=0.2, ge=0.0, le=1.0)
+    # Antworten einer Aussage ohne Bezug kommen auch ueber den direkten Weg nur, wenn
+    # ihr eigener Rohscore zur Suchanfrage mindestens so hoch ist. Gemessen am
+    # Startbestand (SUCHTESTSET.md, Abschnitt Bezug): unpassende solche Antworten bis
+    # 0,872, passende ab 0,82; eine Schwelle trennt beides nicht. 0,86 haelt den Befund
+    # von Produktion 0.9.2 (0,83) und zwei weitere fremde Faelle fern und laesst Recall@10 am Seed
+    # ueber dem Tor; ganz ohne Ausnahme fiele er darunter.
+    suche_bezug_direkt_ab: float = Field(default=0.86, ge=0.0, le=1.01)
+    # Inhaltstor (services/search/inhaltstor.py), nur fuer Suchanfragen ab drei Woertern:
+    # Ein Aussagetreffer mit Aehnlichkeit von suche_inhaltstor_ab bis unter
+    # suche_inhaltstor_aussage_bis und ein direkter Treffer mit Rohscore ueber
+    # suche_inhaltstor_ab bis unter suche_inhaltstor_direkt_bis zaehlen nur, wenn
+    # Suchanfrage und Treffer ein Inhaltswort teilen (Lemma eines Nomens oder
+    # Eigennamens der Suchanfrage). Gegen eine fremde Antwort, deren Aussage nicht unter
+    # den Aussagetreffern ist ("Open Source ist unsicher!", 0,821 auf Produktion 0.9.3).
+    # Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Inhaltstor).
+    suche_inhaltstor: bool = True
+    suche_inhaltstor_ab: float = Field(default=0.82, ge=0.0, le=1.0)
+    suche_inhaltstor_aussage_bis: float = Field(default=0.92, ge=0.0, le=1.01)
+    suche_inhaltstor_direkt_bis: float = Field(default=0.90, ge=0.0, le=1.01)
 
     # Keyword overlap boosting configuration
     enable_keyword_overlap_boost: bool = (

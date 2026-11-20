@@ -334,6 +334,34 @@ describe('RundgangComponent', () => {
       expect(b.textContent).toContain('Text schmal');
       flush();
     }));
+
+    it('schafft unten Platz, wenn das Ziel am Seitenende unter der Karte laege, und nimmt ihn danach zurueck', fakeAsync(() => {
+      const haupt = document.createElement('main');
+      haupt.id = 'hauptinhalt';
+      haupt.innerHTML = `<div style="height:${window.innerHeight}px"></div><div id="probe-unten" style="height:40px">unten</div>`;
+      document.body.appendChild(haupt);
+      try {
+        service.aktiv.set({
+          rundgang: { ...PROBE, schritte: [{ titel: 'Unten', text: 'Am Ende', ziel: '#probe-unten' }, PROBE.schritte[0]] },
+          index: 0,
+        });
+        fixture.detectChanges();
+        tick();
+
+        expect(parseFloat(haupt.style.paddingBottom)).toBeGreaterThan(0);
+        const kartenOben = blase()!.getBoundingClientRect().top;
+        expect(haupt.querySelector('#probe-unten')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(kartenOben);
+
+        service.weiter();
+        fixture.detectChanges();
+        tick();
+        expect(haupt.style.paddingBottom).toBe('');
+        flush();
+      } finally {
+        haupt.remove();
+        window.scrollTo(0, 0);
+      }
+    }));
   });
 
   describe('weniger Bewegung', () => {

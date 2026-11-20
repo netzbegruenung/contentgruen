@@ -34,6 +34,18 @@
   max-width: 100%;
 }
 
+.tab-name {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tab-emoji {
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
 .tab-zahl {
   font-size: 15px;
   font-weight: 700;
@@ -257,6 +269,10 @@
   align-items: stretch;
 }
 
+.fangkorb--seitenleiste .erklaerung {
+  margin-top: 16px;
+}
+
 .fangkorb--seitenleiste .fangkorb-kopf app-hilfe-umschalter {
   align-self: flex-start;
 }
@@ -270,6 +286,25 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 14px;
+}
+
+/* Gewaehlt: Leiste links statt Unterstrich, damit der Umschalter auch untereinander
+   klar zeigt, welche Liste offen ist */
+.fangkorb--seitenleiste .tab.aktiv {
+  box-shadow: inset 4px 0 0 var(--akzent-tanne);
+}
+
+.fangkorb--seitenleiste .tab-zahl {
+  min-width: 2.2em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--mulde);
+  text-align: center;
+}
+
+.fangkorb--seitenleiste .tab.aktiv .tab-zahl {
+  background: var(--akzent-tanne);
+  color: #fff;
 }
 
 .fangkorb--seitenleiste .tab + .tab {

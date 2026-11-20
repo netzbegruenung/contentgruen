@@ -26,18 +26,69 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
-| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
+| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users`, Client Scope `kc-admin-api` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht; den Scope verlangt Keycloak ab 26.8.2 (unten) |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
-Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht. Nach dem Import
-deshalb von Hand:
+Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht.
 
-- *Authentication → Required actions → Terms and Conditions*: `Enabled` und
-  `Set as default action` an. Dann stimmt jedes neue Konto beim ersten Anmelden den
-  Nutzungsbedingungen zu, auch über den Identity Provider. Ohne diesen Schritt weist
-  Keycloak jedes Konto aus einer Einladung ab (`PFLICHTAKTIONEN` in
-  `infrastructure/keycloak_konten.py`).
+- *Authentication → Required actions → Terms and Conditions*: seit 0.9.8 `Enabled` und
+  `Set as default action` aus. Die Nutzungsbedingungen fragt die App auf `/einwilligung` mit
+  eigenem Häkchen und speichert die Zustimmung mit Stand (`docs/ART9_EINWILLIGUNG.md`); neue
+  Konten bekommen keine Pflichtaktion mehr (`PFLICHTAKTIONEN` in
+  `infrastructure/keycloak_konten.py` ist leer). Ein bestehender Realm schaltet sie am
+  Rollout-Tag ab, erst nachdem die Zeitpunkte archiviert sind und 0.9.8 live ist; danach wird
+  das Attribut `terms_and_conditions` an allen Konten gelöscht (Reihenfolge:
+  `docs/ART9_EINWILLIGUNG.md`, „Keycloak“; Archiv: `docs/LOESCHKONZEPT.md`; Befehle unten).
+  Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie noch tragen
+  (26.8.2, `AuthenticationManager.getApplicableRequiredAction`).
+
+### Attribut der alten Zustimmung löschen (Rollout 0.9.8)
+
+Keycloak 26.8.2 führt `terms_and_conditions` im Benutzerprofil als eigenes Attribut, das über die
+Admin-Schnittstelle nie schreibbar und nur lesbar ist, solange die Pflichtaktion an ist
+(`DeclarativeUserProfileProviderFactory.createUserResourceValidation`). Exportieren
+(`mvp/scripts/manual/keycloak_nb_zeitpunkte.py`) geht deshalb nur vorher, Löschen nur in der
+Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`; die Befehle sind für
+PostgreSQL, Tabellennamen klein), nach dem Archivieren und dem Abschalten, eingeschränkt auf den
+Realm `gutgesagt` und das Attribut `terms_and_conditions`.
+
+1. Vorher die betroffenen Zeilen sichern (Personendaten): als CSV über `STDOUT`, damit die Datei
+   dort entsteht, wo die Shell sie hinlenkt, mit 0600, auch wenn `psql` per `docker exec` im
+   Container läuft; nach erfolgreichem Abschluss löschen, das Archiv aus dem Exportskript bleibt.
+   `<psql>` ist der Aufruf in die Datenbank von Keycloak (etwa `docker exec -i <container> psql -U
+   <user> <db>`):
+
+   ```bash
+   S=/opt/gutgesagt-archiv/terms_and_conditions-zeilen.csv
+   (umask 077; <psql> -c "\copy (SELECT ua.* FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions') TO STDOUT WITH CSV HEADER" > "$S.neu") && mv "$S.neu" "$S" && ls -l "$S"
+   ```
+
+2. In einer Transaktion zählen, löschen, nachzählen. Die erste Zahl muss gleich „mit Zeitpunkt“
+   plus „ohne lesbare Zahl“ aus dem letzten Lauf des Exportskripts sein und `DELETE n` gleich ihr,
+   die zweite 0; sonst `ROLLBACK;` statt `COMMIT;`. Die SQL zählt Zeilen, das Skript Konten ohne
+   Dienstkonten; weicht es ab, sind das meist Konten, die zwischen dem letzten Export und dem
+   Abschalten zugestimmt haben: ihre Zeilen aus der Sicherung ins Archiv übernehmen
+   (`kennung,zeitpunkt`), dann erneut. Die Zeile mit `TERMS_AND_CONDITIONS` zählt nur mit, ob es
+   die Schreibweise aus Keycloak 21.0.0 gibt; steht dort mehr als 0, erst klären:
+
+   ```sql
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'TERMS_AND_CONDITIONS';
+   BEGIN;
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   DELETE FROM user_attribute ua USING user_entity ue, realm r WHERE ue.id = ua.user_id AND r.id = ue.realm_id AND r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   COMMIT;
+   ```
+
+Derselbe Zeitpunkt kann noch an zwei Stellen stehen, wenn der Realm Ereignisse speichert (die
+Vorlage schaltet das nicht ein): Login-Ereignisse `CUSTOM_REQUIRED_ACTION` in `EVENT_ENTITY` und
+Admin-Ereignisse mit Darstellung in `ADMIN_EVENT_ENTITY`. Ist *Realm settings → Events → Save
+events* an, gehen sie mit der Frist der übrigen Ereignisse; sonst ist nichts zu tun.
+
+Danach den Benutzer-Cache leeren, sonst liefert Keycloak die alten Werte aus dem Cache: in der
+Admin-Konsole im Realm `master`, Benutzermenü oben rechts → *Clear Caches* → *User Cache* →
+*Clear* (braucht `manage-realm`, das Dienstkonto `gutgesagt-einladungen` hat es nicht).
 
 Platzhalter, vor dem Import ersetzen:
 
@@ -47,33 +98,51 @@ Platzhalter, vor dem Import ersetzen:
   `<keycloak>/realms/gutgesagt/broker/netzbegruenung/endpoint` ist. Das Secret danach in der
   Oberfläche beim Identity Provider eintragen.
 - Die Adressen von App und BFF in den Redirect-URIs von `gutgesagt`, falls nicht die
-  Produktion gemeint ist. Die Vorlage erlaubt genau zwei: `/signin-oidc` der BFF und die
-  App-Adresse, auf die der Link in der Mail zurückführt (`SEMANTIC_SEARCH_APP_URL`, mit `/`
-  am Ende).
+  Produktion gemeint ist. Die Vorlage erlaubt genau drei, jede exakt (Keycloak vergleicht
+  ohne `*` die ganze Adresse): `/signin-oidc` der BFF; `<app>/einladung/anmelden`, auf die der
+  Link in der Mail nach dem Passwort führt und die gleich die Anmeldung startet; und die
+  App-Adresse selbst (`SEMANTIC_SEARCH_APP_URL`, genau so geschrieben, auch beim `/` am Ende).
+  Fehlt die mittlere, weist Keycloak die Mail ab, und der Semantic-Service schickt sie mit der
+  App-Adresse noch einmal, mit einer Warnung im Log; man meldet sich dann selbst an.
 
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
 
-Bei der Pflichtaktion zeigt Keycloak den Text `localizationTexts.de.termsText` aus der Vorlage.
-Ein eigenes Theme gibt es nicht: Keycloak gibt diesen Text als HTML aus (`terms.ftl`,
-`kcSanitize`), Link und Stand-Datum stehen also direkt darin. Er verlinkt die Seite
-`/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: 30. Oktober 2026)“;
-`scripts/tests/test_keycloak_nutzungsbedingungen.py` prüft, dass der Stand mit der Stand-Zeile
-der Seite übereinstimmt. Keycloak speichert bei der Zustimmung nur den Zeitpunkt; welchem Text
-jemand zugestimmt hat, sagt nur dieses Datum.
-
-Bei einem neuen Stand der Nutzungsbedingungen deshalb Vorlage und Realm nachziehen: in der
-Vorlage `termsText` (der Test schlägt sonst fehl), im laufenden Realm *Realm settings →
-Localization → Realm overrides → de → termsText*; ein erneuter Import ändert einen bestehenden
-Realm nicht. Der Text nennt nach dem Link in drei Punkten das Wichtigste (CC0, eigene Texte,
-Sperren) und sagt, was „Annehmen“ und „Ablehnen“ bewirken (#491). Der Wortlaut ist vorläufig, bis
-die Prüfung mit #296 durch ist (Lückenliste P12); danach wird er nur in der Vorlage und im Realm
-ersetzt. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen ist in der Vorlage
-noch nicht enthalten (Folgeticket).
+Bis 0.9.8 zeigte Keycloak bei der Pflichtaktion den Text `localizationTexts.de.termsText`; er ist
+aus der Vorlage entfernt (#731), weil die Nutzungsbedingungen seitdem nur über das Häkchen der App
+angenommen werden (NB §2). Ein bestehender Realm behält seinen Override unter *Realm settings →
+Localization → Realm overrides*; er wirkt nur, solange die Pflichtaktion an ist, und kann nach dem
+Abschalten weg. Die Art.-9-Einwilligung fragt die App selbst (#489, `docs/ART9_EINWILLIGUNG.md`).
 
 Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
 die Einlöseseite nennt dieselbe Frist.
+
+## Keycloak ab 26.8.2: Admin-API-Scope
+
+Seit Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
+ausgestellt sind: Scope `kc-admin-api` im Token und die Admin-Adresse des Realms
+(`<keycloak>/admin/realms/gutgesagt`) als Audience. Die Rolle `manage-users` allein reicht
+nicht mehr. Beides setzt der Client Scope `kc-admin-api`, den Keycloak in jedem Realm
+anlegt (beim Anlegen und bei der Migration auf 26.8.2; 26.8.0 und 26.8.1 kennen ihn noch
+nicht), aber nur `admin-cli` und `security-admin-console` zuweist.
+
+Symptom, wenn er am Client `gutgesagt-einladungen` fehlt: Jeder Aufruf der Admin-Schnittstelle
+endet mit 401, und Keycloak schreibt dazu auf INFO nichts ins Log. Das trifft das Einlösen
+von Einladungen, das Löschen nie benutzter Konten (#538) und `kennungen_umstellen.py`.
+Ob ein Token passt, zeigt sein Inhalt (`aud`, `scope`), nicht die Token-Introspection.
+Die meldet `active: false`, wenn der fragende Client nicht in der Audience steht; das ist
+kein Fehler.
+
+Die Vorlage weist den Scope dem Client als *Default* zu (`defaultClientScopes`, daneben die
+übrigen Standard-Scopes, die der Client sonst vom Realm bekäme); ein neuer Realm aus der
+Vorlage braucht also nichts von Hand. In einem bestehenden Realm:
+
+- *Clients → gutgesagt-einladungen → Client scopes → Add client scope → `kc-admin-api` →
+  Add → Default*.
+- Nur an diesem Client, nicht realmweit: In der Liste *Client scopes* bleibt der
+  *Assigned type* von `kc-admin-api` auf `None`. Sonst bekäme jeder neue Client den Scope,
+  und auch die Tokens der App trügen die Audience der Admin-Schnittstelle.
 
 ## Reihenfolge beim Umstellen
 
@@ -109,8 +178,8 @@ wieder.
 
 Ein Konto im Realm entsteht für ein Mitglied sonst erst bei der ersten Anmeldung über den
 Realm. Vor dem Umstellen der BFF legt das Skript es deshalb an (`--konten-anlegen`):
-verknüpft mit der alten Kennung, ohne Mail, mit der Pflichtaktion für die
-Nutzungsbedingungen. Wer sich danach mit der Netzbegrünung anmeldet, landet in genau
+verknüpft mit der alten Kennung, ohne Mail (bis 0.9.8 mit der Pflichtaktion für die
+Nutzungsbedingungen, seitdem fragt sie die App). Wer sich danach mit der Netzbegrünung anmeldet, landet in genau
 diesem Konto. Dafür braucht es die Mail-Adresse, denn im Realm ist sie der
 Benutzername. Ist eine Adresse im Realm schon vergeben, etwa über eine Einladung,
 verknüpft das Skript nichts und nennt die Kennung. Ob diese Person ihr Konto aus der
@@ -130,13 +199,23 @@ anzulegenden Konten fehlen.
 Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres bricht mit
 `ModuleNotFoundError` ab, bevor es etwas schreibt. Auf dem Host, in einer ruhigen Zeit
 (eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
-Reihenfolge:
+Reihenfolge.
+
+Die Root-Shell auf den Hosts ist zsh, und dort heißt `read -p` etwas anderes (Coprozess);
+also zuerst `bash` starten. Dann das Secret des Clients `gutgesagt-einladungen` mit dieser Zeile
+abfragen, einzeln einfügen und das Secret eintippen; nicht zusammen mit dem nächsten Block
+einfügen, `read` nähme sonst dessen erste Zeile als Secret. So landet es auch nicht in der
+History.
+
+```bash
+read -rs -p 'Secret gutgesagt-einladungen: ' SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; echo
+```
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/kennungen_umstellen.py
-# Zugang zum Realm, falls im Container noch nicht gesetzt (Secret nicht in die History):
+# Zugang zum Realm, falls im Container noch nicht gesetzt:
 export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID=gutgesagt-einladungen
-read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
+export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
 KC=(-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID
     -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET)
 # ADMIN_USER_IDS der BFF, die Löschliste und die Beta-Zugänge der BFF (managed-users.json)
@@ -195,7 +274,7 @@ in das Konto im Realm mit seiner Mail-Adresse um:
   Netzbegrünung, gehen die Beiträge des Beta-Zugangs dorthin. Die Adresse ist im Realm
   der Benutzername; wer sie hat, ist dieselbe Person.
 - Sonst legt der Lauf ein Konto an: Vor- und Nachname aus `displayName` (der Anzeigename
-  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), Pflichtaktion Nutzungsbedingungen, Adresse als bestätigt, und Keycloak
+  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), ohne Pflichtaktion (die Nutzungsbedingungen fragt seit 0.9.8 die App), Adresse als bestätigt, und Keycloak
   schickt die Mail „Passwort festlegen“ (drei Tage gültig, danach „Passwort vergessen“). Das
   alte Passwort lässt sich nicht mitnehmen, Keycloak kennt bcrypt nicht. Bestätigt, weil die
   Adresse schon die Anmeldung des Beta-Zugangs war, und damit die Löschfrist für nie

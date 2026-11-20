@@ -5,7 +5,7 @@ This service filters and adjusts search results based on polarity mismatch
 between query and results to reduce contradictory content in search results.
 """
 
-from typing import TypeVar, Generic, Protocol
+from typing import Optional, TypeVar, Generic, Protocol
 from dataclasses import dataclass
 
 from core.logging import get_logger
@@ -31,8 +31,12 @@ class PolarityFilterResult:
     explanation: str
     # Die Antworten dieser Aussage kommen auch nicht ueber den direkten Weg zurueck
     # (SearchOrchestrator.collect_direct): Eine Antwort auf das Gegenteil ist keine
-    # Antwort. Nur bei einem Widerspruch nach dem NLI-Modell (#574).
+    # Antwort. Bei einem Widerspruch nach dem NLI-Modell (#574) und bei einer Aussage
+    # ohne Bezug zur Suchanfrage (services/search/bezug.py).
     antworten_ausschliessen: bool = False
+    # Ausnahme dazu: Eine Antwort, die selbst mindestens so aehnlich zur Suchanfrage ist,
+    # kommt doch direkt (nur ohne Bezug, suche_bezug_direkt_ab). None: nie.
+    antworten_direkt_ab: Optional[float] = None
 
 
 class HasScore(Protocol):

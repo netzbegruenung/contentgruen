@@ -7,7 +7,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +20,7 @@ import { EinwurfAktionenService } from './einwurf-aktionen.service';
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
@@ -32,6 +32,8 @@ import {
   TABS,
   LEER_GEFISCHT,
   andererTab,
+  tabAus,
+  FANGKORB_TAB_PARAM,
   filterLaden,
   filterSpeichern,
   passtZumFilter,
@@ -81,6 +83,12 @@ export const SEITENLEISTE_MEDIEN = '(min-width: 1024px)';
 export class FangkorbComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly tabs = TABS;
+  /** Dieselben Symbole wie auf den Karten-Knoepfen und Stufen (KETTEN_ICONS). */
+  readonly tabEmoji: Record<FangkorbTab, string> = {
+    destillieren: KETTEN_ICONS.destillieren,
+    ausformulieren: KETTEN_ICONS.verfassen,
+  };
+  readonly einwerfenEmoji = KETTEN_ICONS.einwerfen;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
 
   /** Die Langfassung hinter dem Hilfe-Icon; zu, bis jemand danach fragt. */
@@ -122,9 +130,11 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     private einwurfAktionen: EinwurfAktionenService,
     private breakpoints: BreakpointObserver,
     private host: ElementRef<HTMLElement>,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.tabAusDerAdresse();
     this.breakpoints
       .observe(SEITENLEISTE_MEDIEN)
       .pipe(takeUntil(this.destroy$))
@@ -198,6 +208,25 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   }
 
   // Tabs
+
+  /**
+   * Ein Tab in der Adresse (``?tab=``, von den Schritten der Beitragen-Seite) gilt und wird
+   * gemerkt. Danach kommt er wieder heraus: Bliebe er stehen, oeffnete ein Neuladen nach
+   * einem Tabwechsel wieder den aus der Adresse (wie ``MEINE_TAB_PARAM``, #508).
+   */
+  private tabAusDerAdresse(): void {
+    const tab = tabAus(this.route.snapshot.queryParamMap.get(FANGKORB_TAB_PARAM));
+    if (!tab) {
+      return;
+    }
+    this.filterSetzen({ ...this.filter, tab });
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [FANGKORB_TAB_PARAM]: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
   tabWaehlen(tab: FangkorbTab): void {
     this.filterSetzen({ ...this.filter, tab });

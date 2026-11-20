@@ -435,7 +435,7 @@ class VarianteZeile(Base):
 class AussageThemaZeile(Base):
     """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
 
-    Je Aussage hoechstens zwei Zeilen; das prueft AussageThemenService, nicht die
+    Je Aussage hoechstens drei Zeilen; das prueft AussageThemenService, nicht die
     Tabelle. zuordnungsart unterscheidet die Zuordnung von Hand von der einer spaeteren
     Automatik. Traegt bewusst weder Kennung noch Zeitpunkt: Die Zuordnungen von
     Hand sind das Testset fuer Themenvorschlaege und sollen ohne Personendaten
@@ -803,6 +803,31 @@ class Art9OhneEinwilligungZeile(Base):
     user_id = Column(String(255), primary_key=True)
     wortlaut = Column(String(64), nullable=False)
     entschieden_am = Column(DateTime(timezone=True), nullable=False)
+
+
+class NutzungsbedingungenZustimmungZeile(Base):
+    """
+    Eine Zustimmung zu den Nutzungsbedingungen in der App (domain/nutzungsbedingungen.py):
+    wer, wann und welchem Stand (Kennung ``JJJJ-MM-TT``). Je Zustimmung eine Zeile, es
+    gilt die juengste; eine Zustimmung zu einem neuen Stand ist eine neue Zeile, die
+    frueheren bleiben als Nachweis. Kein Widerruf: Wer die Bedingungen nicht mehr will,
+    laesst das Konto loeschen.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-20-nutzungsbedingungen-zustimmungen.sql dokumentiert
+    das Schema. Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "nutzungsbedingungen_zustimmungen"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    stand = Column(String(64), nullable=False)
+    zugestimmt_am = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_nutzungsbedingungen_zustimmungen_user", "user_id", "zugestimmt_am"),
+    )
 
 
 class AbzeichenSichtbarkeitZeile(Base):

@@ -21,7 +21,12 @@ from fastapi.testclient import TestClient
 from api.v1 import contribution as contribution_module
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from api.v1.contribution import router as contribution_router
-from dependencies import get_reference_service, get_settings
+from dependencies import (
+    get_aussage_themen_service,
+    get_reference_service,
+    get_settings,
+    get_statement_service,
+)
 from dtos.contribution import ContributionEntry
 from tests.conftest import create_base_content_fields
 
@@ -71,11 +76,27 @@ def herkunft():
 
 
 @pytest.fixture
-def client(repository, nutzung, herkunft):
+def aussagen():
+    service = MagicMock()
+    service.zu_antworten = AsyncMock(return_value={})
+    return service
+
+
+@pytest.fixture
+def themen():
+    service = MagicMock()
+    service.themen_von.return_value = {}
+    return service
+
+
+@pytest.fixture
+def client(repository, nutzung, herkunft, aussagen, themen):
     app = FastAPI()
     app.include_router(contribution_router, prefix="/api/v1/contribution")
     app.dependency_overrides[get_settings] = lambda: Mock()
     app.dependency_overrides[get_reference_service] = lambda: herkunft
+    app.dependency_overrides[get_statement_service] = lambda: aussagen
+    app.dependency_overrides[get_aussage_themen_service] = lambda: themen
 
     factory = MagicMock()
     factory.create_content_repository.return_value = repository
@@ -309,3 +330,54 @@ def test_liefert_zweck_und_stil_eines_kommentars(client, repository):
         ("kommentarspalte", None),
         (None, None),
     ]
+
+
+def aussage(text: str, *, antworten=()):
+    return SimpleNamespace(
+        id=uuid.uuid4(),
+        text=text,
+        replysuggestions=[SimpleNamespace(id=a, relevance=0.9) for a in antworten],
+        created="2026-09-01T10:00:00",
+    )
+
+
+def test_liefert_aussage_und_themen_fuers_album(client, repository, aussagen, themen):
+    mit, ohne = beitrag(), beitrag()
+    repository.getByAuthor.return_value = [mit, ohne]
+    repository.getCountByAuthor.return_value = 2
+    gefunden = aussage("Klimaschutz kostet nur Geld.", antworten=[mit.id])
+    aussagen.zu_antworten.return_value = {mit.id: [gefunden]}
+    themen.themen_von.return_value = {gefunden.id: ["klima", "haushalt-steuern"]}
+
+    daten = client.get(URL, headers={"X-User": "person-1"}).json()
+
+    assert aussagen.zu_antworten.call_args.args[0] == [mit.id, ohne.id]
+    erster, zweiter = daten["results"]
+    assert erster["aussage"] == {
+        "id": str(gefunden.id),
+        "text": "Klimaschutz kostet nur Geld.",
+        "themen": [
+            {"schluessel": "klima", "name": "Klima", "motiv": "themen/klima.svg"},
+            {
+                "schluessel": "haushalt-steuern",
+                "name": "Haushalt und Steuern",
+                "motiv": "themen/haushalt-steuern.svg",
+            },
+        ],
+    }
+    assert zweiter["aussage"] is None
+
+
+def test_aussagen_nicht_lesbar_liefert_die_liste_ohne_thema(
+    client, repository, aussagen
+):
+    repository.getByAuthor.return_value = [beitrag()]
+    repository.getCountByAuthor.return_value = 1
+    aussagen.zu_antworten.side_effect = RuntimeError("Qdrant weg")
+
+    with patch.object(contribution_module, "logger") as logger:
+        response = client.get(URL, headers={"X-User": "person-1"})
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["aussage"] is None
+    assert logger.warning.call_count == 1

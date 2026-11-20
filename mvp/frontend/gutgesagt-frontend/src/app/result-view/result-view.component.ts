@@ -19,6 +19,8 @@ import { FORMULAR_PFAD, aussageParameterMitText, istAussageId } from '../shared/
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
+import { AussageThemenComponent } from '../shared/themen/aussage-themen.component';
+import { AussageMitThemenFeld } from '../services/themen.service';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 import { KartenDaten, KartenKennzahlen, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -41,6 +43,7 @@ import {
   aussageSchluessel,
   gruppieren,
 } from './ergebnis-gruppen';
+import { TESTEINGABE_AUFRUF, TESTEINGABE_BEISPIEL, testeingabeArt, testeingabeText } from '../shared/testeingabe';
 
 /** Wie viele aehnliche Aussagen die Zeile "Erkannt als" unter "Nicht gemeint?" anbietet. */
 const ALTERNATIVEN_ERKANNT = 3;
@@ -126,6 +129,22 @@ export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null
   return gewaehlt.aussage;
 }
 
+/**
+ * Die erkannte Aussage mit ihren Themen, fuer die Themen an der Zeile "Erkannt als": die
+ * Themen traegt jeder ihrer Treffer. null ohne ID (nur Text) und ohne bekannte Themen
+ * (null: Nachschlagen gescheitert); ein Zuordnen ersetzte sonst die vorhandenen.
+ */
+export function erkannteMitThemen(antwort: SearchResponse, erkannt: ErkannteAussage | null): AussageMitThemenFeld | null {
+  if (!erkannt || !istAussageId(erkannt.id)) {
+    return null;
+  }
+  const treffer = alleTreffer(antwort).find((t) => t.statement_id === erkannt.id);
+  if (!treffer || !Array.isArray(treffer.themen)) {
+    return null;
+  }
+  return { statement_id: erkannt.id, themen: [...treffer.themen] };
+}
+
 /** Der Gruppenschluessel der erkannten Aussage (wie aussageSchluessel); null ohne. */
 export function erkannterSchluessel(erkannt: ErkannteAussage | null): string | null {
   return erkannt ? erkannt.id || `text:${erkannt.text}` : null;
@@ -168,6 +187,7 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
+    AussageThemenComponent,
     NichtDabeiComponent,
     OftGesuchtComponent
   ],
@@ -195,6 +215,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   bekannteAussagen: string[] = [];
   /** In der Zeile "Erkannt als" (#642, V3); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
+  /** Die erkannte Aussage mit ihren Themen, zum Ansehen und Zuordnen (app-aussage-themen). */
+  erkannteThemen: AussageMitThemenFeld | null = null;
 
   // Einmal je Suchantwort und Wahl umgerechnet, nicht im Template: neue Objekte bei
   // jeder Change Detection setzten die Karten zurueck (Kurz/Lang, Aufklapper).
@@ -245,6 +267,20 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   /** "Nicht gemeint?" klappt die Alternativen erst auf. */
   alternativenOffen = false;
 
+  /**
+   * Der Text der Karte bei einer Testeingabe ("test", "hallo", "hilfe"; GLOSSARY), sonst null.
+   * Dann wird nicht gesucht: Die Suche legte den Text sonst als Aussage an.
+   */
+  testeingabe: string | null = null;
+  /**
+   * Die aktuelle Suchanfrage ist eine Testeingabe: Treffer, Ladeanzeige und Fehler bleiben weg,
+   * auch wenn die Antwort einer vorigen Suche noch spaet eintrifft. Sofort gesetzt, die Karte
+   * kommt erst nach dem Zeichnen.
+   */
+  ohneSuche = false;
+  readonly testeingabeAufruf = TESTEINGABE_AUFRUF;
+  readonly testeingabeBeispiel = TESTEINGABE_BEISPIEL;
+
   constructor(
     private searchService: SearchService,
     private stateService: StateManagementService,
@@ -291,6 +327,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         // Die Alternativen gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
         this.alternativen = [];
         this.erkannt = response ? erkannteAussage(response) : null;
+        this.erkannteThemen = response ? erkannteMitThemen(response, this.erkannt) : null;
         this.themenDerTreffer = response ? themenDerTreffer(response, erkannterSchluessel(this.erkannt)) : [];
         this.anzeigen();
       });
@@ -302,6 +339,29 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.performSearch();
       }
     });
+  }
+
+  /**
+   * Die Themen der erkannten Aussage haben sich geaendert (app-aussage-themen): Treffer
+   * und Themenfilter ziehen gleich nach, ohne neue Suche. Ein aktives Thema, das es
+   * unter den Treffern nicht mehr gibt, faellt weg; sonst stuende die Seite leer.
+   */
+  erkannteThemenGeaendert(themen: Thema[]): void {
+    const id = this.erkannteThemen?.statement_id;
+    if (!this.antwort || !id) {
+      return;
+    }
+    for (const treffer of alleTreffer(this.antwort)) {
+      if (treffer.statement_id === id) {
+        treffer.themen = [...themen];
+      }
+    }
+    this.themenDerTreffer = themenDerTreffer(this.antwort, erkannterSchluessel(this.erkannt));
+    if (this.aktivesThema && !this.themenDerTreffer.some((t) => t.schluessel === this.aktivesThema)) {
+      this.aktivesThema = null;
+    }
+    this.anzeigen();
+    this.cdr.markForCheck();
   }
 
   /** Nach einem Thema filtern; null = alle. */
@@ -435,10 +495,33 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     // sofort, nicht erst mit loading=true. Wer in diesem Fenster auf "hinzufuegen"
     // tippt, darf nicht an die alte Aussage antworten.
     this.stateService.neueSucheBeginnen();
+    this.testeingabe = null;
+    const art = testeingabeArt(this.searchQuery);
+    this.ohneSuche = art !== null;
+    if (art) {
+      // Kein Suchaufruf, also keine Aussage, keine Suche ohne Treffer, keine Luecke.
+      this.stateService.setSearchQuery(this.searchQuery);
+      this.stateService.setLoading(false);
+      const suchtext = this.searchQuery;
+      const text = testeingabeText(art);
+      // Erst nach dem Zeichnen: Die aria-live-Region steht dann schon und kuendigt die Karte an.
+      Promise.resolve().then(() => {
+        if (this.searchQuery !== suchtext) {
+          return;
+        }
+        this.testeingabe = text;
+        this.cdr.markForCheck();
+      });
+      return;
+    }
     this.fetchSearchResults();
   }
 
   private fetchSearchResults(): void {
+    // Auch "Erneut versuchen" sucht keine Testeingabe: Der Suchaufruf legte sie als Aussage an.
+    if (testeingabeArt(this.searchQuery)) {
+      return;
+    }
     this.searchService.search(this.searchQuery, 10).subscribe();
   }
 

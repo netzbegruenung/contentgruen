@@ -313,7 +313,7 @@ Empfänger und Ort“.
   aus (`ss/services/loeschauftrag_service.py`); bis dahin behalten Beiträge, Einwürfe und Sätze
   Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Was die Person nach einer neuen
   Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst der Auftrag alles (Entscheidung
-  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
+  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13` (in diesen Sätzen wortgleich `2026-11-19`)
   (`ss/domain/art9_einwilligung.py`) sagt das: „Innerhalb von sieben Tagen werden auch meine
   Beiträge, Einwürfe und Sätze von mir gelöst: […] Was ich nach einer neuen Einwilligung
   beitrage, bleibt davon unberührt. Mein Konto bleibt.“ Wer einem früheren Wortlaut zugestimmt
@@ -704,9 +704,11 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
 - **Zweck, Rechtsgrundlage:** dem Schreibenden Anmerkungen, Sprachhinweis und Kürzungsvorschlag zeigen;
   Art. 6 Abs. 1 lit. b (`DSE:320-361`).
 - **Daten:** Titel, Text und die Aussage, auf die geantwortet wird, gehen an den eigenen Server, ohne
-  KI und ohne externen Dienst; beim Kommentar und bei der Hintergrundinfo dazu `hat_herkunft`, nur
-  Ja/Nein, ob eine Herkunft eingetragen ist (die Herkunft selbst geht nicht mit); gespeichert wird
-  nichts, nur ein flüchtiger Zähler gegen Überlastung (`DSE:320-361`).
+  KI und ohne externen Dienst; beim Kommentar und bei der Hintergrundinfo dazu `hat_herkunft` und
+  `herkunft_ohne_fundstelle`, nur Ja/Nein, ob eine Herkunft eingetragen ist und ob sie nur eine
+  Startseite oder ein lokaler Pfad ist (das prüft das Formular, die Herkunft selbst geht nicht mit),
+  beim Kommentar der gewählte Zweck; gespeichert wird nichts, nur ein flüchtiger Zähler gegen
+  Überlastung (`DSE:320-361`).
 - **Frist:** keine Speicherung; der Zähler höchstens etwa elf Minuten (`DSE:320-361`).
 - **Risiko:** gering. Die Entwürfe können politische Haltung enthalten, werden aber nicht abgelegt.
   Die Funktionen sind auch ohne Art.-9-Einwilligung offen (`A9:17-27`).

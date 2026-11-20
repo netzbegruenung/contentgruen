@@ -496,6 +496,11 @@ mat-sidenav-content {
   color: var(--akzent-schrift);
 }
 
+/* Themen der erkannten Aussage unter der Zeile; gleicht deren negativen Abstand aus */
+.erkannt-themen {
+  margin-top: var(--spacing-sm);
+}
+
 .erkannt-liste {
   display: flex;
   flex-wrap: wrap;
@@ -808,4 +813,34 @@ mat-sidenav-content {
   .treffer-spalte.zweispaltig .ergebnisse > .weitere {
     max-width: none;
   }
+}
+
+/* Testeingabe: eine Karte statt Treffern, in der Hinweisbox (Grund und Balken aus styles.css) */
+.testeingabe-karte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  font-size: 1rem;
+}
+
+.testeingabe-karte p {
+  margin: 0;
+}
+
+.testeingabe-text {
+  font-size: 1.15rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.testeingabe-aufruf {
+  color: var(--text-leise);
+}
+
+.testeingabe-beispiel {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
 }

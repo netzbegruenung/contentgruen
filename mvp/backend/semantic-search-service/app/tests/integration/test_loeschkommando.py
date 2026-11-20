@@ -27,6 +27,7 @@ from infrastructure.database.models import (
     GeseheneNutzung,
     LoeschauftragZeile,
     MusterHinweisZeile,
+    NutzungsbedingungenZustimmungZeile,
     PunkteEinwilligungZeile,
     Einwurf,
     AusformuliertIn,
@@ -291,6 +292,14 @@ def spuren(datenbank, einwuerfe):
                 eingewilligt=True,
                 wortlaut="2026-11-13",
                 beantwortet_am=datetime.now(timezone.utc),
+            )
+        )
+        # Die Zustimmung zu den Nutzungsbedingungen in der App.
+        s.add(
+            NutzungsbedingungenZustimmungZeile(
+                user_id=PERSON,
+                stand="2026-11-19",
+                zugestimmt_am=datetime.now(timezone.utc),
             )
         )
         # Ein Loeschauftrag nach einem Widerruf (DSFA R9b).

@@ -86,8 +86,8 @@ the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background
 up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
 tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
 a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` together with
-`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) skips the model and restores the rule
-before #387. The image also carries a second NLI model, the Bestätiger
+`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) and `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=false`
+skips the model and restores the rule before #387. The image also carries a second NLI model, the Bestätiger
 (`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
 much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
 the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
@@ -101,6 +101,18 @@ NLI-Stufe and the "Antwort auf" filter of other requests wait for it (up to thei
 so under load they fall back to the threshold more often. In `an` the search waits for the
 judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4 s instead of
 0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
+The NLI check of the Bezug (`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`, default `true`) uses the same
+model the same way (it loads it itself while the NLI-Stufe is `aus`): each search with a full
+statement waits for one judgement of the Aussagen between 0.87 and 0.92 (on the shared dev VM
+median +0.07 s, 95th percentile 0.35 s instead of 0.10 s). Together with the polarity in `an`,
+a search waits for the model twice in a row, each up to 2 s, so up to 4 s when it is busy.
+`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=false` keeps only the lower limit, without the model.
+
+The Inhaltstor of the search (`SEMANTIC_SEARCH_SUCHE_INHALTSTOR`, default `true`) uses the spaCy
+model `de_core_news_sm` that is already loaded at start for Gegenlesen, so it needs no extra
+RAM. Until the model is loaded the gate stays open; the search does not wait for it. Runtime
+cost on the dev VM: median 145 instead of 139 ms per search. `SEMANTIC_SEARCH_SUCHE_INHALTSTOR=false`
+switches it off.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,
@@ -180,24 +192,15 @@ admin switches it on. Before switching on Punkte or Abzeichen on production: DSF
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
-for `main`, see [CI.md](CI.md)). After the merge the images are built. Until the switch
-described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs build them:
+for `main`, see [CI.md](CI.md)). After the merge Woodpecker builds the images
+(`.woodpecker/build.yaml` and, on `v*` tags, `release.yaml`, each after a green `ci` run, see
+[CI.md, "Images and releases"](CI.md#images-and-releases)). The GitHub mirror runs no CI.
 
-- **GitHub Actions on the mirror** (`.github/workflows/build.yml` and `release.yml`) publish
-  the tags the environments use, after running their test suites
-  (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
-- **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
-  the same images with the same release tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
-  `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
-  the prefix is gone and the GitHub workflows are removed.
+Tags (`scripts/image_tags.py`):
 
-Tags (`scripts/image_tags.py` in Woodpecker):
-
-- **Push to `main`:** `:main` for the images whose files changed; GitHub also sets
-  `:sha-<short>`, Woodpecker no longer does (registry space, `docs/CI.md`). A cleanup rule of
-  the organisation removes `sha-` tags older than 7 days; the 5 newest versions per image
-  (all tags counted, `main` and releases included) always stay. The test environment runs
-  `:main`, rolled out manually (see above).
+- **Push to `main`:** `:main` for all four images, no tag per commit
+  (registry space, `docs/CI.md`). The test environment runs `:main`, rolled out manually
+  (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
   images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
@@ -233,14 +236,10 @@ navigates there across a rollout; moving it into the address is open.
    [SemVer](https://semver.org/) after that. No release candidates (`-rc`): production only
    takes release versions.
 3. **Release pull request:** before tagging, one pull request prepares the release.
-   - **Version in the footer:** Woodpecker's release build passes the tag to the frontend
-     image (build argument `APP_VERSION`), and the footer shows it; no version change is
-     needed for those images. **Until the switch** ([CI.md](CI.md#images-and-releases)) the
-     deployed images still come from GitHub's `release.yml`, which does not pass the tag: set
-     `version` in `mvp/frontend/gutgesagt-frontend/package.json` to `X.Y.Z` (without the `v`)
-     as before, `npm version X.Y.Z --no-git-tag-version` in that directory. This sub-step
-     goes with the switch. Woodpecker's builds of `main` show „main · <commit>“
-     instead of a version; local builds show the `package.json` version.
+   - **No version change in `package.json`:** the release build passes the tag to the
+     frontend image (build argument `APP_VERSION`), and the footer shows it. Builds of `main`
+     show „main · <commit>“ instead of a version; local builds show the `package.json`
+     version.
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with
@@ -260,9 +259,8 @@ navigates there across a rollout; moving it into the address is open.
    If `main` moves while the pull request is open, merge it in and draft the list again, so
    that it covers everything up to the tag except the release pull request itself.
 4. **Tag on Forgejo:** set the tag on the merge commit of the release pull request on `main`
-   on Forgejo, not on a later commit: later pull requests belong to the next release. The push
-   mirror carries the tag to GitHub, where `release.yml` tests and builds the images; on
-   Forgejo, Woodpecker runs `ci` and then `release` for the same tag. Check that the run is
+   on Forgejo, not on a later commit: later pull requests belong to the next release. Woodpecker
+   runs `ci` and then `release` for the tag. Check that the run is
    green and the `:X.Y.Z` tags exist in the registry before announcing the release.
 5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
    repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
@@ -302,10 +300,9 @@ What this means for a rollout:
   before are not in the table yet. The repeatable ones run once more (seconds, brief table
   locks), the three non-repeatable ones are recognised by their effect and recorded as `erkannt`
   without running.
-- **A new migration needs a new semantic search image.** The files are baked into it. A
-  migration merged without other changes to the service only reaches `:main` once that image
-  is rebuilt (path filters in `.woodpecker/build.yaml` and `.github/workflows/build.yml`;
-  Woodpecker also rebuilds it for a new migration alone); release tags build all images.
+- **A new migration needs a new semantic search image.** The files are baked into it. Every
+  push to `main` rebuilds all images (`.woodpecker/build.yaml` has no path filters), so a
+  merged migration lands in `:main` of that image; release tags build all images too.
 - **After restoring a backup** the table holds the state of the backup. `restore.sh` restarts
   the semantic search service, which then applies the migrations added since; after a restore
   by other means, restart it yourself.
@@ -504,7 +501,7 @@ semantic search container.
 
 Questions about deployment and requests for test-system or production access go in an issue on
 [Forgejo](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues); without Forgejo access,
-see [CONTRIBUTING.md](../CONTRIBUTING.md#repository). Security vulnerabilities: see
+see [CONTRIBUTING.md](../.github/CONTRIBUTING.md#repository). Security vulnerabilities: see
 [SECURITY.md](../SECURITY.md).
 
 ---

@@ -276,6 +276,12 @@ class StatementService(
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
         return await self._repository.zu_antwort(beitrag_id)
 
+    async def zu_antworten(
+        self, beitrag_ids: List[uuid.UUID]
+    ) -> Dict[uuid.UUID, List[StatementDbEntry]]:
+        """Sichtbare Aussagen je Beitrag, fuer viele Beitraege auf einmal (Album)."""
+        return await self._repository.zu_antworten(beitrag_ids)
+
     async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
         """Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt (#351)."""
         return await self._repository.beantwortet_einer(beitrag_ids)

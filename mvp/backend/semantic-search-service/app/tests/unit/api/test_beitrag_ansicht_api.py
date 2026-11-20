@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.content import router as content_router
 from dependencies import (
+    get_aussage_themen_service,
     get_beitrag_laden,
     get_commentary_service,
     get_generic_text_service,
@@ -98,7 +99,15 @@ def aussagen():
 
 
 @pytest.fixture
-def client(dienste, laden, herkunft, nutzung, stimmen, aussagen):
+def themen():
+    """Der AussageThemenService, soweit die Seite ihn braucht: ohne Themen."""
+    dienst = MagicMock()
+    dienst.themen_von.return_value = {}
+    return dienst
+
+
+@pytest.fixture
+def client(dienste, laden, herkunft, nutzung, stimmen, aussagen, themen):
     app = FastAPI()
     app.include_router(content_router, prefix="/api/v1/content")
     app.dependency_overrides.update(
@@ -111,6 +120,7 @@ def client(dienste, laden, herkunft, nutzung, stimmen, aussagen):
             get_reference_service: lambda: herkunft,
             get_voting_service: lambda: stimmen,
             get_statement_service: lambda: aussagen,
+            get_aussage_themen_service: lambda: themen,
         }
     )
     with patch("api.v1.content.get_usage_service", return_value=nutzung):
@@ -292,12 +302,48 @@ class TestBeitragKontext:
         assert body["aussage"] == {
             "id": str(aussage.id),
             "text": "Wärmepumpen taugen nichts im Altbau",
+            "themen": [],
         }
         assert body["weitere_antworten"] == [
             {"id": str(andere), "content_type": "generic_text", "titel": "Feldtest"}
         ]
         # Der Beitrag selbst ist keine weitere Antwort.
         aussagen.sichtbare_antworten.assert_awaited_once_with([andere])
+
+    def test_aussage_mit_ihren_themen(self, client, aussagen, themen):
+        aussage = _aussage(
+            "Wärmepumpen taugen nichts im Altbau", _vorschlag(BEITRAG_ID)
+        )
+        aussagen.zu_antwort.return_value = [aussage]
+        themen.themen_von.return_value = {aussage.id: ["energie-heizen", "wohnen"]}
+
+        body = client.get(URL).json()
+
+        assert body["aussage"]["themen"] == [
+            {
+                "schluessel": "energie-heizen",
+                "name": "Energie und Heizen",
+                "motiv": "themen/energie-heizen.svg",
+            },
+            {"schluessel": "wohnen", "name": "Wohnen", "motiv": "themen/wohnen.svg"},
+        ]
+        themen.themen_von.assert_called_once_with([aussage.id])
+
+    def test_stoerung_bei_den_themen_laesst_die_aussage_stehen(
+        self, client, aussagen, themen
+    ):
+        aussage = _aussage(
+            "Wärmepumpen taugen nichts im Altbau", _vorschlag(BEITRAG_ID)
+        )
+        aussagen.zu_antwort.return_value = [aussage]
+        themen.themen_von.side_effect = RuntimeError("Datenbank weg")
+
+        body = client.get(URL).json()
+
+        assert body["aussage"]["text"] == "Wärmepumpen taugen nichts im Altbau"
+        # None, nicht leer: Leer saehe aus wie "keine Themen", und ein Klick auf
+        # "Themen zuordnen" ersetzte die vorhandenen.
+        assert body["aussage"]["themen"] is None
 
     def test_stoerung_beim_nachschlagen_laesst_die_seite_stehen(self, client, aussagen):
         aussagen.zu_antwort.side_effect = RuntimeError("Qdrant weg")

@@ -20,9 +20,9 @@ help:
 	@echo "Utility commands:"
 	@echo "  clean                  Remove local test images"
 
-# Build individual services (matching the GitHub Actions build workflow)
+# Build individual services (the CI builds the images in .woodpecker/build.yaml)
 build-frontend:
-	@echo "🔨 Building frontend (matching GitHub Actions CI)..."
+	@echo "🔨 Building frontend..."
 	cd mvp/frontend/gutgesagt-frontend && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -31,7 +31,7 @@ build-frontend:
 		.
 
 build-bff:
-	@echo "🔨 Building BFF (matching GitHub Actions CI)..."
+	@echo "🔨 Building BFF..."
 	cd mvp/backend/BFF && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -40,7 +40,7 @@ build-bff:
 		.
 
 build-semantic-search:
-	@echo "🔨 Building semantic search service (matching GitHub Actions CI)..."
+	@echo "🔨 Building semantic search service..."
 	cd mvp/backend/semantic-search-service && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -53,9 +53,9 @@ build-semantic-search:
 build-all: build-frontend build-bff build-semantic-search
 	@echo "✅ All services built successfully!"
 
-# Test backend (matching the GitHub Actions test job)
+# Test backend
 test-backend:
-	@echo "🧪 Running backend tests (matching GitHub Actions CI)..."
+	@echo "🧪 Running backend tests..."
 	@echo "Note: On Windows, use 'make test-backend-fast' for better performance"
 	@echo "This command replicates the CI test environment (python:3.13)"
 	docker run --rm \

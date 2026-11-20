@@ -37,15 +37,9 @@ CI_NODE = "git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest"
 
 
 def compose_image(datei, dienst):
-    """Image des Dienstes ``dienst`` in einer Compose-Datei oder einem GitHub-Workflow."""
+    """Image des Dienstes ``dienst`` in einer Compose-Datei."""
     inhalt = yaml.safe_load((WURZEL / datei).read_text())
-    if "jobs" in inhalt:
-        dienste = {}
-        for job in inhalt["jobs"].values():
-            dienste.update(job.get("services", {}))
-    else:
-        dienste = inhalt["services"]
-    return dienste[dienst]["image"]
+    return inhalt["services"][dienst]["image"]
 
 
 def test_ci_laeuft_bei_pull_request_push_auf_main_tag_und_manuell():
@@ -101,8 +95,6 @@ def test_jeder_schritt_im_ci_image_zieht_neu():
     [
         ("mvp/docker-compose.dev.yml", "qdrant"),
         ("mvp/docker-compose.local-dbs.yml", "qdrant"),
-        # Der Qdrant-Dienst der GitHub-CI auf dem Spiegel
-        (".github/workflows/tests-backend.yml", "qdrant"),
     ],
 )
 def test_qdrant_dienst_hat_ueberall_dieselbe_version(quelle):

@@ -20,6 +20,19 @@ export interface Art9Wortlaut {
   text: string;
 }
 
+/**
+ * Zustimmung zu den Nutzungsbedingungen in der App (api/v1/nutzungsbedingungen.py). Kein
+ * Teil der Einwilligung: ein Vertrag, auf derselben Seite mit eigenem Häkchen gefragt.
+ */
+export interface NutzungsbedingungenStand {
+  zugestimmt: boolean;
+  /** Kennung (JJJJ-MM-TT) des Stands, dem die Person zuletzt zugestimmt hat. */
+  stand: string | null;
+  zugestimmt_am: string | null;
+  /** Der Stand, dem die App zustimmen lässt: Kennung und Stand-Zeile der Seite. */
+  aktueller_stand: { kennung: string; stand: string };
+}
+
 /** Antwort von GET /api/v1/art9-einwilligung (api/v1/art9_einwilligung.py). */
 export interface Art9EinwilligungStand {
   eingewilligt: boolean;
@@ -30,10 +43,36 @@ export interface Art9EinwilligungStand {
   aktueller_wortlaut: Art9Wortlaut;
   /** Wortlaut, zu dem die Person bewusst ohne Einwilligung weiterging (B2), am Konto; sonst null. */
   ohne_wortlaut?: string | null;
+  /**
+   * Zustimmung zu den Nutzungsbedingungen. Fehlt das Feld (Backend vor dieser Seite), fragt
+   * die App nicht danach; das Backend sperrt dann auch nicht.
+   */
+  nutzungsbedingungen?: NutzungsbedingungenStand | null;
+}
+
+/** Ob die Person den Nutzungsbedingungen in der App noch zustimmen muss. */
+export function nutzungsbedingungenFehlen(stand: Art9EinwilligungStand | null | undefined): boolean {
+  return !!stand?.nutzungsbedingungen && !stand.nutzungsbedingungen.zugestimmt;
+}
+
+/**
+ * Ob zum Beitragen nur die Zustimmung zu den Nutzungsbedingungen fehlt, die Einwilligung aber
+ * gilt: Dann nennen Hinweiskasten und Snackbar die Nutzungsbedingungen statt der Einwilligung.
+ */
+export function nurNutzungsbedingungenFehlen(stand: Art9EinwilligungStand | null | undefined): boolean {
+  return !!stand && stand.eingewilligt && nutzungsbedingungenFehlen(stand);
+}
+
+/** Ob die Person beitragen und bewerten kann: Nutzungsbedingungen zugestimmt und eingewilligt. */
+export function beitragenFrei(stand: Art9EinwilligungStand): boolean {
+  return stand.eingewilligt && !nutzungsbedingungenFehlen(stand);
 }
 
 /** Antworttext des Backends, wenn ein Endpunkt die Einwilligung verlangt (dependencies.py). */
 export const ART9_EINWILLIGUNG_FEHLT = 'art9_einwilligung_fehlt';
+
+/** Antworttext, wenn die Zustimmung zu den Nutzungsbedingungen fehlt (dependencies.py). */
+export const NUTZUNGSBEDINGUNGEN_FEHLEN = 'nutzungsbedingungen_fehlen';
 
 export const EINWILLIGUNG_PFAD = '/einwilligung';
 
@@ -64,10 +103,15 @@ export function wortlautErsterSatz(text: string): string {
   return satz.length <= WORTLAUT_LABEL_MAX ? satz : text;
 }
 
-/** Ob ein HTTP-Fehler die fehlende Art.-9-Einwilligung meldet (403 mit Kennzeichen). */
+/**
+ * Ob ein HTTP-Fehler meldet, dass zum Beitragen etwas auf /einwilligung fehlt (403 mit
+ * Kennzeichen): die Art.-9-Einwilligung oder die Zustimmung zu den Nutzungsbedingungen.
+ * Beides führt auf dieselbe Seite, Hinweiskasten und Snackbar gelten für beides.
+ */
 export function einwilligungFehlt(fehler: unknown): boolean {
   const f = fehler as { status?: number; error?: { detail?: unknown } | null } | null | undefined;
-  return f?.status === 403 && f?.error?.detail === ART9_EINWILLIGUNG_FEHLT;
+  const detail = f?.error?.detail;
+  return f?.status === 403 && (detail === ART9_EINWILLIGUNG_FEHLT || detail === NUTZUNGSBEDINGUNGEN_FEHLEN);
 }
 
 /**
@@ -126,6 +170,11 @@ function alterOhneEintragWeg(): void {
  * Ob sie ohne Einwilligung weiterging, sagt der Server (``ohne_wortlaut``).
  */
 export function zurEinwilligungUmleiten(stand: Art9EinwilligungStand): boolean {
+  // Ohne Zustimmung zu den Nutzungsbedingungen immer, auch wer zur Einwilligung schon
+  // entschieden hat: Bestandskonten werden so einmal gefragt (Entscheidung Maintainer, 20.11.2026).
+  if (nutzungsbedingungenFehlen(stand)) {
+    return true;
+  }
   const ohneBeiWortlaut = stand.ohne_wortlaut ?? null;
   if (stand.eingewilligt || stand.widerrufen_am) {
     return false;
@@ -150,6 +199,7 @@ export function zurEinwilligungUmleiten(stand: Art9EinwilligungStand): boolean {
 @Injectable({ providedIn: 'root' })
 export class Art9EinwilligungService implements OnDestroy {
   private readonly apiUrl = `${environment.baseUrl}/api/v1/art9-einwilligung`;
+  private readonly nbUrl = `${environment.baseUrl}/api/v1/nutzungsbedingungen`;
   private abo?: Subscription;
   private sichtbarAbo?: Subscription;
   /** Kennung der angemeldeten Person, sonst null. */
@@ -191,6 +241,22 @@ export class Art9EinwilligungService implements OnDestroy {
     return this.http.post<void>(`${this.apiUrl}/ohne`, { wortlaut });
   }
 
+  /**
+   * Den Nutzungsbedingungen zustimmen (Kennung des gezeigten Stands). Hat die Person schon
+   * eingewilligt, ist sie damit geklärt; sonst folgt ``einwilligen`` oder nichts.
+   */
+  nutzungsbedingungenZustimmen(stand: string, schonEingewilligt: boolean): Observable<void> {
+    return this.http.post<void>(this.nbUrl, { stand }).pipe(
+      tap(() => {
+        this.zustand.nbSetzen(false);
+        if (schonEingewilligt) {
+          this.geklaertSetzen(this.kennung);
+          this.zustand.setzen('eingewilligt');
+        }
+      }),
+    );
+  }
+
   /** Der jetzige Wert von ``geklaert$``. */
   geklaert(): string | null {
     return this.geklaertFuer.value;
@@ -206,6 +272,7 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         this.zustand.setzen('fehlt');
+        this.zustand.nbSetzen(false);
         // Aufräumen nach dem Widerruf: Der Merker der angezeigten Meilensteine geht mit (#351),
         // ebenso ein Kommentar-Entwurf im Tab (E1).
         merkerEntfernen();
@@ -242,6 +309,7 @@ export class Art9EinwilligungService implements OnDestroy {
           this.zustand.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
           this.zustand.setzen('unbekannt');
+          this.zustand.nbSetzen(false);
         }),
         filter((kennung): kennung is string => !!kennung),
         // Scheitert die Abfrage, nicht umleiten: Das Backend sperrt trotzdem, und der
@@ -250,8 +318,9 @@ export class Art9EinwilligungService implements OnDestroy {
           this.stand().pipe(
             catchError(() => of(null)),
             tap((stand) => {
-              if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
-              if (stand) this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+              if (!stand || beitragenFrei(stand)) this.geklaertSetzen(kennung);
+              if (stand) this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
+              this.zustand.nbSetzen(nurNutzungsbedingungenFehlen(stand));
               // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
               if (stand && !stand.eingewilligt) {
                 merkerEntfernen();
@@ -290,11 +359,12 @@ export class Art9EinwilligungService implements OnDestroy {
       )
       .subscribe((stand) => {
         if (!stand) return;
-        this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+        this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
+        this.zustand.nbSetzen(nurNutzungsbedingungenFehlen(stand));
         // Widerruf in einem anderen Tab: auch der Kommentar-Entwurf dieses Tabs geht (E1).
         if (!stand.eingewilligt) kommentarEntwurfLoeschen();
         // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).
-        this.geklaertSetzen(stand.eingewilligt ? this.kennung : null);
+        this.geklaertSetzen(beitragenFrei(stand) ? this.kennung : null);
       });
   }
 

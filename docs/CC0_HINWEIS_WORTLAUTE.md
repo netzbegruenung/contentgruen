@@ -24,17 +24,31 @@ Dienst, Frontend und diese Liste dieselben Kennungen kennen.
 ## Wortlaute
 
 Links stehen auf „CC0“ (CC0-Erklärung von Creative Commons) und „Nutzungsbedingungen“
-(`/nutzungsbedingungen`), beide im neuen Tab; den Link auf „CC0“ gibt es seit #415. Mit #415
+(`/nutzungsbedingungen`), beide im neuen Tab; den Link auf „CC0“ gibt es seit #415. Er zeigt
+seit dem Stand der Nutzungsbedingungen vom 19. November 2026 auf den deutschen Rechtstext
+(`legalcode.de`, Kopie als Beleg: `docs/CC0_LEGALCODE_DE_2026-11-19.md`), vorher auf die
+Kurzfassung (`deed.de`); der Wortlaut des Hinweises ist gleich, deshalb keine neue Kennung. Mit #415
 heißt es außerdem „stimmst den Nutzungsbedingungen zu“ statt „bestätigst die
 Nutzungsbedingungen“, weil „bestätigen“ nur nach Kenntnisnahme klingt; daher die neuen
-Kennungen. Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formularen.
+Kennungen. Seit dem Stand der Nutzungsbedingungen vom 20. November 2026 stimmt man ihnen mit
+einem Häkchen auf `/einwilligung` zu (NB §2); der Hinweis sagt deshalb „es gelten die
+Nutzungsbedingungen“ statt „stimmst den Nutzungsbedingungen zu“ (Wortlaut freigegeben vom
+Maintainer, 20.11.2026). Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formularen.
 
 | Kennung | Wo | Wortlaut | gültig |
 |---------|----|----------|--------|
-| `2026-11-02-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 (Datum nach dem Ausrollen eintragen) |
-| `2026-11-02-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-20-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0; es gelten die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von 0.9.8 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-20-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0; es gelten die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von 0.9.8 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-02-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 bis zum Produktiv-Deploy von 0.9.8 (Daten nach dem Ausrollen eintragen) |
+| `2026-11-02-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 bis zum Produktiv-Deploy von 0.9.8 (Daten nach dem Ausrollen eintragen) |
 | `2026-10-29-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis zum Produktiv-Deploy von #415 |
 | `2026-10-29-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis zum Produktiv-Deploy von #415 |
 
 Vorher (55bb5cb8 bis #431) stand im Formular „… deine eigene Formulierung unwiderruflich unter
 CC0 …“, ohne Kennung; Beiträge, Sätze und Einwürfe aus dieser Zeit haben keine.
+
+## Linkziel von „CC0“
+
+| Datum | Änderung |
+|-------|----------|
+| 19.11.2026 | Linkziel von `https://creativecommons.org/publicdomain/zero/1.0/deed.de` auf `https://creativecommons.org/publicdomain/zero/1.0/legalcode.de` (CC0 1.0) geändert; Hinweistext und Lizenz unverändert, deshalb keine neue Kennung (Entscheidung Maintainer, 19.11.2026, #718) |

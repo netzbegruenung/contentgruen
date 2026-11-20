@@ -18,6 +18,7 @@ from domain.art9_einwilligung import (
     WORTLAUT_KENNUNG_MAX,
     WORTLAUTE,
 )
+from api.v1.nutzungsbedingungen import NbStandResponse, nb_stand
 from services import art9_einwilligung_service
 from services.abzeichen_service import get_abzeichen_service
 from services.art9_einwilligung_service import UnbekannterWortlaut, WortlautGiltNicht
@@ -43,6 +44,9 @@ class StandResponse(BaseModel):
     # Zu welchem Wortlaut die Person bewusst ohne Einwilligung weiterging (B2), sonst
     # None; die App fuehrt dann nicht bei jedem Start auf /einwilligung.
     ohne_wortlaut: Optional[str] = None
+    # Die Zustimmung zu den Nutzungsbedingungen (api/v1/nutzungsbedingungen.py): Die
+    # App fragt beides auf derselben Seite und fuehrt hin, solange eins davon fehlt.
+    nutzungsbedingungen: Optional[NbStandResponse] = None
 
 
 class EinwilligenRequest(BaseModel):
@@ -58,6 +62,7 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
     try:
         einwilligung = _service().stand(user_id)
         ohne_wortlaut = _service().ohne(user_id)
+        nutzungsbedingungen = nb_stand(user_id)
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gelesen: {type(e).__name__}",
@@ -75,6 +80,7 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
             kennung=AKTUELLER_WORTLAUT, text=WORTLAUTE[AKTUELLER_WORTLAUT]
         ),
         ohne_wortlaut=ohne_wortlaut,
+        nutzungsbedingungen=nutzungsbedingungen,
     )
 
 

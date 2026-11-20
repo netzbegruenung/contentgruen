@@ -4,7 +4,7 @@ ueber dieselben Endpunkte wie das Einwurf-Formular.
 
 Braucht BFF, semantic-search und PostgreSQL des Dev-Stacks (``mvp/run-local.sh up``)
 und das Testkonto aus ``mvp/config/managed-users.example.json``. Liegt deshalb unter
-``api/``, das die GitHub-CI auslaesst. Ohne BFF ueberspringt sich das Modul; im
+``api/``, das die CI ueberspringt. Ohne BFF ueberspringt sich das Modul; im
 Pflichtmodus (``scripts/check.sh --integration``) scheitert es stattdessen,
 ausser in der CI, die kein BFF startet (``stack.pflicht_ausser_in_ci``). Die
 Links sind je Lauf neu, damit wiederholte Laeufe im selben Stack nicht aneinander
@@ -98,6 +98,17 @@ def eingewilligt(sitzung):
     if stand.status_code == 404:
         return
     assert stand.status_code == 200
+    # Vorher die Nutzungsbedingungen: Ohne sie sperrt der Dienst wie ohne Einwilligung.
+    nb = stand.json().get("nutzungsbedingungen")
+    if nb is not None:
+        assert (
+            sitzung.post(
+                f"{BFF_URL}/api/v1/nutzungsbedingungen",
+                json={"stand": nb["aktueller_stand"]["kennung"]},
+                timeout=10,
+            ).status_code
+            == 204
+        )
     kennung = stand.json()["aktueller_wortlaut"]["kennung"]
     assert (
         sitzung.post(basis, json={"wortlaut": kennung}, timeout=10).status_code == 204

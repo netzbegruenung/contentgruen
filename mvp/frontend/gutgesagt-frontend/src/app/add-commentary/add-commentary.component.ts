@@ -68,6 +68,7 @@ import {
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
+import { herkunftOhneFundstelle } from '../beitragsformular/gegenlesen/herkunftsangaben';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
@@ -572,6 +573,11 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
    */
   get hatHerkunft(): boolean {
     return !!this.commentaryForm.value.references?.length || LINK.test(this.commentaryForm.value.lang ?? '');
+  }
+
+  /** Herkunft und Links der Langfassung sind nur Startseiten oder lokale Pfade. */
+  get herkunftOhneFundstelle(): boolean {
+    return herkunftOhneFundstelle(this.commentaryForm.value.references, this.commentaryForm.value.lang);
   }
 
   get titelLaenge(): number {

@@ -49,7 +49,12 @@ from services.search.search_query_statement import (
 )
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from services.polarity_filter_service import get_polarity_filter_service
+from services.polarity_filter_service import (
+    PolarityFilterResult,
+    get_polarity_filter_service,
+)
+from services.search.bezug import get_aussage_bezug
+from services.search.inhaltstor import inhaltstor_fuer
 from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
@@ -85,6 +90,10 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     """
     Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
     Polaritaetsstrafe (Wortlisten oder NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Aussagen ohne Bezug (services/search/bezug.py) stehen am Ende mit Score 0 und einem
+    Eintrag antworten_ausschliessen/antworten_direkt_ab in den Metadaten: So haelt der
+    Orchestrator ihre Antworten vom direkten Weg fern. Ueber die Aussage selbst fallen
+    sie nur weg, weil der kombinierte Score (hoechstens 0,3) unter jeder Schwelle liegt.
     Liefert die Treffer und die Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
     (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
     """
@@ -97,6 +106,22 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
         )
     )
     logger.debug(f"📊 Statement search results: {len(statement_index_results)} items")
+    for aussage in statement_index_results:
+        aussage.aehnlichkeit = aussage.score
+
+    # Aussagen ohne inhaltlichen Bezug zur Suchanfrage (services/search/bezug.py),
+    # an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern gemessen.
+    positionen_ohne_bezug = await get_aussage_bezug().ohne_bezug(
+        query_text, statement_index_results, lambda r: r.text, lambda r: r.score
+    )
+    ohne_bezug = [
+        r for i, r in enumerate(statement_index_results) if i in positionen_ohne_bezug
+    ]
+    statement_index_results = [
+        r
+        for i, r in enumerate(statement_index_results)
+        if i not in positionen_ohne_bezug
+    ]
 
     polarity_filter = get_polarity_filter_service(
         enable_filtering=settings.enable_polarity_filtering
@@ -126,7 +151,24 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     logger.debug(
         f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
     )
-    return statement_index_results, polarity_metadata
+    # Ohne Bezug: Score 0, und ihre Antworten kommen ueber den direkten Weg nur mit
+    # eigener Aehnlichkeit ab suche_bezug_direkt_ab. Sonst stand eine Antwort auf die
+    # fremde Aussage dort als beste Antwort ("Open Source ist unsicher!": ein kurzer
+    # Kommentar zur Migranten-Aussage, eigene Aehnlichkeit 0,83 ueber der Schwelle 0,82).
+    for aussage in ohne_bezug:
+        polarity_metadata[aussage.id] = PolarityFilterResult(
+            original_score=aussage.score,
+            adjusted_score=0.0,
+            polarity_penalty_applied=0.0,
+            polarity_mismatch_detected=False,
+            query_polarity="bezug",
+            result_polarity="ohne_bezug",
+            explanation="kein Bezug zur Suchanfrage",
+            antworten_ausschliessen=True,
+            antworten_direkt_ab=settings.suche_bezug_direkt_ab,
+        )
+        aussage.score = 0.0
+    return statement_index_results + ohne_bezug, polarity_metadata
 
 
 async def treffer_sammeln(
@@ -142,7 +184,7 @@ async def treffer_sammeln(
     Anreicherung folgt im Endpunkt. Auch vom Suchtestset genutzt.
     """
     await orchestrator.collect_statement_based(
-        statement_index_results, limit, polarity_metadata
+        statement_index_results, limit, polarity_metadata, query_text=query_text
     )
     await orchestrator.collect_direct(query_text, limit)
     orchestrator.sort_and_truncate(limit)
@@ -310,6 +352,7 @@ async def search_by_text(
             reference_service=reference_service,
             usage_service=get_usage_service(),
             voting_service=voting_service,
+            inhaltstor=inhaltstor_fuer(statement_service),
         )
 
         await treffer_sammeln(
@@ -331,10 +374,13 @@ async def search_by_text(
         try:
             orchestrator.themen_ergaenzen(themen_service)
         except Exception as e:
-            # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann.
+            # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann. None
+            # statt leer, damit die Seite kein Zuordnen anbietet (es ersetzte die
+            # vorhandenen Themen).
             logger.warning(
                 f"Failed to add Themen to search results: {type(e).__name__}"
             )
+            orchestrator.themen_unbekannt()
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

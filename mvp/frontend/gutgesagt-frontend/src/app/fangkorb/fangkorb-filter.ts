@@ -10,6 +10,13 @@ import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
 export const FILTER_SCHLUESSEL = 'gutgesagt.fangkorb.filter';
 
 /**
+ * Query-Parameter, mit dem der Fangkorb gleich in einer Arbeitsliste aufgeht
+ * (``/fangkorb?tab=ausformulieren``, von den Schritten der Beitragen-Seite). Er gilt
+ * nur fuer diesen Sprung; danach haelt die Sitzung den Tab wie sonst auch.
+ */
+export const FANGKORB_TAB_PARAM = 'tab';
+
+/**
  * Die Plattformen, die ein gespeicherter Filter ohne Angabe "bekannte" kannte -
  * so hat ihn die Version vor Threads, X und Bluesky abgelegt.
  */
