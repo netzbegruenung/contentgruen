@@ -108,8 +108,17 @@ class TestEinloesen:
         )
 
         repository.einloesung_zaehlen.assert_called_once_with(CODE, HEUTE)
-        konten.konto_anlegen.assert_called_once_with("neu@example.org")
+        konten.konto_anlegen.assert_called_once_with("neu@example.org", None, None)
         repository.einloesung_zuruecknehmen.assert_not_called()
+
+    def test_name_geht_mit_ans_konto(self, repository, konten):
+        EinladungService(repository, konten).einloesen(
+            CODE, "neu@example.org", heute=HEUTE, vorname="Anna", nachname="Beispiel"
+        )
+
+        konten.konto_anlegen.assert_called_once_with(
+            "neu@example.org", "Anna", "Beispiel"
+        )
 
     def test_ungueltiger_code_legt_kein_konto_an(self, repository, konten):
         repository.einloesung_zaehlen.return_value = False

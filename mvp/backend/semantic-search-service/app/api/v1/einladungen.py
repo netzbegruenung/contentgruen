@@ -8,10 +8,10 @@ import asyncio
 import re
 import uuid
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from core.logging import get_logger
 from dependencies import get_einladung_service, require_admin
@@ -39,6 +39,13 @@ router = APIRouter()
 MAIL_MUSTER = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAIL_MAX = 254
 CODE_MAX = 64
+# Vor- und Nachname gehen an Keycloak (firstName, lastName). Erlaubt ist, was das
+# Benutzerprofil von Keycloak erlaubt (Validator person-name-prohibited-characters,
+# 26.8.2); sonst lehnte Keycloak das Konto ab, und die Seite meldete einen
+# Serverfehler statt eines falschen Namens. Dazu "@": Daraus bildete die BFF keinen
+# Anzeigenamen (DisplayNamePolicy). Laenger als 100 Zeichen heisst niemand.
+NAME_MAX = 100
+NAME_VERBOTEN = re.compile(r'[<>&"\v$%!#?§;*~/\\|^=\[\]{}()@\x00-\x1f\x7f]')
 
 
 class EinladungAnlegenRequest(BaseModel):
@@ -121,6 +128,29 @@ class EinloesenRequest(CodeRequest):
             raise ValueError("Keine gueltige Mail-Adresse")
         return wert
 
+    # Optional, damit eine noch zwischengespeicherte alte Seite (PWA) weiter einloesen
+    # kann; Keycloak fragt dann beim ersten Anmelden nach dem Namen.
+    vorname: Optional[str] = Field(None, max_length=NAME_MAX)
+    nachname: Optional[str] = Field(None, max_length=NAME_MAX)
+
+    @field_validator("vorname", "nachname")
+    @classmethod
+    def _name_pruefen(cls, wert: Optional[str]) -> Optional[str]:
+        if wert is None:
+            return None
+        wert = " ".join(wert.split())
+        if not wert:
+            raise ValueError("Der Name darf nicht leer sein")
+        if NAME_VERBOTEN.search(wert):
+            raise ValueError("Der Name enthaelt ein Zeichen, das nicht geht")
+        return wert
+
+    @model_validator(mode="after")
+    def _beide_namen_oder_keiner(self) -> "EinloesenRequest":
+        if (self.vorname is None) != (self.nachname is None):
+            raise ValueError("Vor- und Nachname nur zusammen")
+        return self
+
 
 class EinloesenResponse(BaseModel):
     success: bool
@@ -188,7 +218,8 @@ async def einladung_einloesen(
     service: EinladungService = Depends(get_einladung_service),
 ):
     """
-    Legt das Konto an; Keycloak schickt die Mail "Passwort festlegen". Gibt es zur
+    Legt das Konto mit Vor- und Nachname an; Keycloak schickt die Mail "Passwort
+    festlegen". Gibt es zur
     Adresse schon ein Konto, ist die Antwort dieselbe: Ob eine Adresse ein Konto hat,
     soll hier niemand herausfinden. X-User wird nicht gelesen.
     """
@@ -196,7 +227,13 @@ async def einladung_einloesen(
         raise HTTPException(status_code=429, detail="Too many requests.")
     try:
         # Im Thread: Keycloak antwortet ueber das Netz, bis zu zehn Sekunden je Schritt.
-        await asyncio.to_thread(service.einloesen, request.code, request.email)
+        await asyncio.to_thread(
+            service.einloesen,
+            request.code,
+            request.email,
+            vorname=request.vorname,
+            nachname=request.nachname,
+        )
     except EinladungUngueltig:
         raise HTTPException(status_code=410, detail="Invitation not valid")
     except EinloesenNichtEingerichtet:

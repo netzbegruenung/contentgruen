@@ -42,11 +42,13 @@ class KontenAttrappe:
         self.ergebnis = ergebnis
         self.fehler = fehler
         self.adressen = []
+        self.namen = []
 
-    def konto_anlegen(self, email):
+    def konto_anlegen(self, email, vorname=None, nachname=None):
         if self.fehler:
             raise RuntimeError("Keycloak nicht erreichbar")
         self.adressen.append(email)
+        self.namen.append((vorname, nachname))
         return self.ergebnis
 
 
@@ -140,10 +142,14 @@ def test_gescheitertes_anlegen_nimmt_die_einloesung_zurueck(neue_datenbank):
     assert service.ist_einloesbar(code, heute=HEUTE)
 
 
-def test_tabelle_kennt_keine_mail_adresse(neue_datenbank):
-    service = _service(neue_datenbank, KontenAttrappe())
+def test_tabelle_kennt_keine_mail_adresse_und_keinen_namen(neue_datenbank):
+    konten = KontenAttrappe()
+    service = _service(neue_datenbank, konten)
     code = service.anlegen("Gruppe", 3, LETZTER_TAG, heute=HEUTE).code
-    service.einloesen(code, "a@example.org", heute=HEUTE)
+    service.einloesen(
+        code, "a@example.org", heute=HEUTE, vorname="Annegret", nachname="Zettelmann"
+    )
+    assert konten.namen == [("Annegret", "Zettelmann")]
 
     spalten = {
         s["name"]
@@ -164,6 +170,7 @@ def test_tabelle_kennt_keine_mail_adresse(neue_datenbank):
     with neue_datenbank.engine.connect() as c:
         inhalt = c.execute(text("SELECT * FROM einladungen")).all()
     assert "a@example.org" not in repr(inhalt)
+    assert "Annegret" not in repr(inhalt) and "Zettelmann" not in repr(inhalt)
 
 
 def test_migration_legt_die_tabelle_an_und_darf_zweimal_laufen(postgres_url):

@@ -7,6 +7,23 @@
   width: 100%;
 }
 
+/* Vor- und Nachname nebeneinander, auf schmalen Bildschirmen untereinander */
+.namen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+
+.namen mat-form-field {
+  flex: 1 1 200px;
+}
+
+.hinweis {
+  margin-top: 0;
+  font-size: 14px;
+  color: var(--text-leise);
+}
+
 .warnung {
   color: var(--fehler);
 }

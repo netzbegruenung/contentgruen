@@ -41,8 +41,10 @@ describe('EinladungComponent', () => {
     fixture.detectChanges();
   }
 
-  function absenden(email: string) {
+  function absenden(email: string, vorname = 'Anna', nachname = 'Beispiel') {
     fixture.componentInstance.email = email;
+    fixture.componentInstance.vorname = vorname;
+    fixture.componentInstance.nachname = nachname;
     fixture.componentInstance.einloesen();
     return http.expectOne(`${URL}/einloesen`);
   }
@@ -103,13 +105,18 @@ describe('EinladungComponent', () => {
     expect(el().querySelector('input[type="email"]')).toBeNull();
   });
 
-  it('legt mit der Mail-Adresse ein Konto an und verweist auf die Mail', () => {
+  it('legt mit Name und Mail-Adresse ein Konto an und verweist auf die Mail', () => {
     starten('Code123');
     pruefen(true);
     expect(el().querySelector('input[type="email"]')).not.toBeNull();
 
-    const anfrage = absenden('neu@example.org');
-    expect(anfrage.request.body).toEqual({ code: 'Code123', email: 'neu@example.org' });
+    const anfrage = absenden('neu@example.org', ' Anna Maria ', 'Beispiel ');
+    expect(anfrage.request.body).toEqual({
+      code: 'Code123',
+      email: 'neu@example.org',
+      vorname: 'Anna Maria',
+      nachname: 'Beispiel',
+    });
     anfrage.flush({ success: true }, { status: 202, statusText: 'Accepted' });
     fixture.detectChanges();
 
@@ -136,6 +143,63 @@ describe('EinladungComponent', () => {
 
     expect(el().textContent).toContain('hat nicht geklappt');
     expect(el().querySelector('input[type="email"]')).not.toBeNull();
+  });
+
+  it('fragt Vor- und Nachname mit sichtbarer Beschriftung und Autofill ab', () => {
+    starten('Code123');
+    pruefen(true);
+
+    const vorname = el().querySelector<HTMLInputElement>('input[name="vorname"]')!;
+    const nachname = el().querySelector<HTMLInputElement>('input[name="nachname"]')!;
+    expect(vorname.getAttribute('autocomplete')).toBe('given-name');
+    expect(nachname.getAttribute('autocomplete')).toBe('family-name');
+    expect(vorname.getAttribute('aria-describedby')).toContain('name-hinweis');
+    expect(nachname.getAttribute('aria-describedby')).toContain('name-hinweis');
+    expect(el().querySelector('#name-hinweis')?.textContent).toContain(
+      'Du kannst auch einen anderen Namen angeben; wir zeigen ihn als ‚Vorname N.‘ an.',
+    );
+    const labels = Array.from(el().querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
+    expect(labels).toEqual(jasmine.arrayContaining(['Vorname', 'Nachname', 'Mail-Adresse']));
+  });
+
+  it('laesst ohne Namen nicht absenden', () => {
+    starten('Code123');
+    pruefen(true);
+    fixture.componentInstance.email = 'neu@example.org';
+    fixture.detectChanges();
+
+    const knopf = Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes('Konto anlegen'));
+    expect(knopf!.disabled).toBeTrue();
+    fixture.componentInstance.einloesen();
+    http.expectNone(`${URL}/einloesen`);
+  });
+
+  it('meldet Zeichen im Namen, die Keycloak ablehnt, ohne Anfrage', () => {
+    starten('Code123');
+    pruefen(true);
+    fixture.componentInstance.email = 'neu@example.org';
+    fixture.componentInstance.vorname = 'Anna!';
+    fixture.componentInstance.nachname = 'Beispiel';
+    fixture.componentInstance.einloesen();
+    fixture.detectChanges();
+
+    http.expectNone(`${URL}/einloesen`);
+    expect(el().querySelector('[role="alert"]')?.textContent).toContain('prüf deinen Namen');
+    expect(el().querySelector('input[name="vorname"]')?.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('sagt bei 422 zum Namen, dass der Name nicht passt, nicht die Adresse', () => {
+    starten('Code123');
+    pruefen(true);
+
+    absenden('neu@example.org').flush(
+      { detail: [{ loc: ['body', 'nachname'], msg: 'Value error' }] },
+      { status: 422, statusText: 'Unprocessable Entity' },
+    );
+    fixture.detectChanges();
+
+    expect(el().textContent).toContain('prüf deinen Namen');
+    expect(el().textContent).not.toContain('nicht wie eine Mail-Adresse');
   });
 
   for (const [status, text] of [

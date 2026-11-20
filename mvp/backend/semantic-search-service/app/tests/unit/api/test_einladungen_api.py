@@ -202,7 +202,50 @@ class TestEinloesen:
         )
 
         assert response.status_code == 202
-        service.einloesen.assert_called_once_with(EINLADUNG.code, "neu@example.org")
+        # Ohne Namen geht es weiter (eine alte, zwischengespeicherte Seite).
+        service.einloesen.assert_called_once_with(
+            EINLADUNG.code, "neu@example.org", vorname=None, nachname=None
+        )
+
+    def test_einloesen_mit_namen(self, client, service):
+        response = client.post(
+            f"{BASIS}/einloesen",
+            json={
+                "code": EINLADUNG.code,
+                "email": "neu@example.org",
+                "vorname": "  Anna   Maria ",
+                "nachname": "O'Beispiel-Muster",
+            },
+        )
+
+        assert response.status_code == 202
+        service.einloesen.assert_called_once_with(
+            EINLADUNG.code,
+            "neu@example.org",
+            vorname="Anna Maria",
+            nachname="O'Beispiel-Muster",
+        )
+
+    @pytest.mark.parametrize(
+        "namen",
+        [
+            {"vorname": "Anna"},
+            {"nachname": "Beispiel"},
+            {"vorname": "  ", "nachname": "Beispiel"},
+            {"vorname": "Anna", "nachname": "<b>Beispiel</b>"},
+            {"vorname": "Anna!", "nachname": "Beispiel"},
+            {"vorname": "Anna", "nachname": "anna@example.org"},
+            {"vorname": "A" * 101, "nachname": "Beispiel"},
+        ],
+    )
+    def test_ungueltiger_name(self, client, service, namen):
+        response = client.post(
+            f"{BASIS}/einloesen",
+            json={"code": EINLADUNG.code, "email": "neu@example.org", **namen},
+        )
+
+        assert response.status_code == 422
+        service.einloesen.assert_not_called()
 
     def test_ungueltige_einladung(self, client, service):
         service.einloesen.side_effect = EinladungUngueltig()
