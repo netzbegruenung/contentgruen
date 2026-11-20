@@ -110,7 +110,7 @@ describe('RundgangBandComponent', () => {
     });
 
     it('zeigt das App-Symbol statt des Wegweisers', () => {
-      expect(el().querySelector('aside img')?.getAttribute('src')).toBe('marke/apple-touch-icon-180.png');
+      expect(el().querySelector('aside img')?.getAttribute('src')).toBe('marke/apple-touch-icon-180-v3.png');
     });
 
     it('hat nur „Ausblenden“, für Screenreader „Hinweis ausblenden“', () => {

@@ -151,7 +151,7 @@ export const HOME_ANGEBOT: Angebot = {
   satz: 'Tippe in Safari auf Teilen',
   // Geschütztes Leerzeichen: „auf“ und „···“ bleiben in einer Zeile
   nachTeilenSymbol: '(oder erst auf ···) und dann auf „Zum Home-Bildschirm“.',
-  bild: 'marke/apple-touch-icon-180.png',
+  bild: 'marke/apple-touch-icon-180-v3.png',
   // Wie das Willkommen nur auf der Startseite unter dem Suchfeld, nicht über Treffern (#599)
   seiten: ['/search'],
   imInhalt: true,
@@ -169,7 +169,7 @@ export const APP_INSTALLIEREN_ANGEBOT: Angebot = {
   schluessel: HOME_HINWEIS_SCHLUESSEL,
   titel: 'Gut gesagt als App',
   satz: 'Mit eigenem Symbol öffnest du Gut gesagt mit einem Tipp, ohne Adressleiste.',
-  bild: 'marke/apple-touch-icon-180.png',
+  bild: 'marke/apple-touch-icon-180-v3.png',
   seiten: ['/search'],
   imInhalt: true,
   installieren: true,

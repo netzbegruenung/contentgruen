@@ -63,7 +63,7 @@ def test_markendateien_im_code_vorhanden():
         for d in (FRONTEND / "src/app").rglob("*.ts")
         for m in re.findall(r"'(/?marke/[^']+)'", d.read_text(encoding="utf-8"))
     }
-    assert "marke/apple-touch-icon-180.png" in pfade
+    assert "marke/apple-touch-icon-180-v3.png" in pfade
     fehlend = sorted(p for p in pfade if not (PUBLIC / p).is_file())
     assert not fehlend, f"genannt, aber nicht unter public/: {fehlend}"
 
@@ -81,9 +81,11 @@ def test_symbolgrund_ist_das_app_gelb():
     theme = (FRONTEND / "src/theme/custom-theme.scss").read_text(encoding="utf-8")
     kopf = re.search(r"--kopf:\s*(#[0-9a-fA-F]{6});", theme).group(1).lower()
     assert json.loads(MANIFEST.read_text(encoding="utf-8"))["background_color"].lower() == kopf
-    bild = Image.open(PUBLIC / "marke/icon-512-v3.png").convert("RGB")
-    r, g, b = bild.getpixel((2, 2))
-    assert f"#{r:02x}{g:02x}{b:02x}" == kopf
+    for name in ("icon-192-v3", "icon-512-v3", "icon-maskable-512-v3", "apple-touch-icon-180-v3",
+                 "favicon-32-v3", "favicon-64-v3"):
+        bild = Image.open(PUBLIC / f"marke/{name}.png").convert("RGB")
+        r, g, b = bild.getpixel((0, 0))
+        assert f"#{r:02x}{g:02x}{b:02x}" == kopf, name
 
 
 def test_manifest_startet_ohne_browserleiste():
