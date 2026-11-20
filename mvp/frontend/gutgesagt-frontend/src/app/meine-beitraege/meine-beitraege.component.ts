@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable, Subject, of } from 'rxjs';
+import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { AlleMeineBeitraege } from '../services/meine-beitraege.service';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MEINE_TAB_PARAM } from '../services/navigation.service';
@@ -90,6 +92,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private statementService: StatementService,
     private verwalten: BeitragVerwaltenService,
+    private snackBar: MatSnackBar,
   ) { }
 
   ngOnInit() {
@@ -106,6 +109,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
         replaceUrl: true,
       });
     }
+    this.ladenAbonnieren();
     this.laden();
     this.meilensteinLaden();
   }
@@ -115,26 +119,45 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /** Alle eigenen Beitraege; beim Nachladen bleibt die bisherige Liste stehen, bis die neue da ist. */
+  /**
+   * Alle eigenen Beitraege; beim Nachladen bleibt die bisherige Liste stehen, bis die neue da
+   * ist. Zwei schnelle Nachladungen ueberholen sich nicht: Es gilt die letzte (switchMap).
+   * Scheitert das erste Laden, steht ein Hinweis mit neuem Versuch da; scheitert ein
+   * Nachladen, sagt es eine Meldung, und die Liste bleibt, wie sie ist.
+   */
   laden(): void {
-    this.meineBeitraegeService
-      .alleMeineBeitraege()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: ({ beitraege }) => {
-          this.eintraege = beitraege.map(albumEintrag);
-          this.isLoading = false;
+    this.laden$.next();
+  }
+
+  private readonly laden$ = new Subject<void>();
+
+  private ladenAbonnieren(): void {
+    this.laden$
+      .pipe(
+        switchMap(() =>
+          this.meineBeitraegeService.alleMeineBeitraege().pipe(
+            map((antwort): AlleMeineBeitraege | null => antwort),
+            catchError((): Observable<AlleMeineBeitraege | null> => of(null)),
+          ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((antwort) => {
+        const erstes = this.isLoading;
+        this.isLoading = false;
+        if (antwort === null) {
+          this.ladefehler = !this.eintraege.length;
+          if (!erstes && this.eintraege.length) {
+            this.snackBar.open('Deine Beiträge ließen sich gerade nicht aktualisieren.', 'OK', { duration: 5000 });
+          }
+        } else {
+          this.eintraege = antwort.beitraege.map(albumEintrag);
           this.ladefehler = false;
           if (!this.eintraege.length) {
             this.unbeantworteteLaden();
           }
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.isLoading = false;
-          this.ladefehler = !this.eintraege.length;
-          this.cdr.markForCheck();
-        },
+        }
+        this.cdr.markForCheck();
       });
   }
 
@@ -190,6 +213,9 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   loeschen(karte: KartenDaten): void {
     this.verwalten.loeschen(karte.id).pipe(takeUntil(this.destroy$)).subscribe((weg) => {
       if (weg) {
+        // Sofort aus der Liste, nicht erst nach dem Nachladen: Scheitert das, ist die Karte trotzdem weg.
+        this.eintraege = this.eintraege.filter((e) => e.karte.id !== karte.id);
+        this.cdr.markForCheck();
         this.laden();
         this.meilensteinLaden();
       }

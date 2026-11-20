@@ -433,6 +433,9 @@ class StatementRepository(
         schluessel = sorted(gesucht)
         for start in range(0, len(schluessel), ANTWORTEN_JE_ABFRAGE):
             block = schluessel[start : start + ANTWORTEN_JE_ABFRAGE]
+            # Nur gegen diesen Block: Eine Aussage, die Beitraege aus zwei Bloecken
+            # beantwortet, kommt in beiden Abfragen und soll je Beitrag einmal haengen.
+            im_block = set(block)
             weiter = None
             while True:
                 punkte, weiter = await self._shared_manager.async_client.scroll(
@@ -468,7 +471,7 @@ class StatementRepository(
                         )
                         continue
                     for antwort in payload.get(FELD_ANTWORT_IDS) or []:
-                        if antwort in gesucht:
+                        if antwort in im_block:
                             ergebnis.setdefault(gesucht[antwort], []).append(aussage)
                 if weiter is None:
                     break

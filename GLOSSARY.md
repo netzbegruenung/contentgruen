@@ -312,7 +312,7 @@ Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; ei
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
 
 **Album**:
-Die eigenen Beiträge in „Meine Beiträge“, als volle Karten in einklappbaren Abschnitten je Thema der Aussage, auf die sie antworten, meistgenutzte zuerst; Beiträge ohne Thema stehen zuletzt unter „Ohne Thema“. Ein Beitrag, dessen Aussage mehrere Themen hat, steht in jedem dieser Abschnitte. Oben ein Deckel mit der Zahl der Beiträge, ihrer Nutzung und der Themen; ohne jede Nutzung steht dort statt der Nutzung der nächste Meilenstein. Ab sieben Beiträgen gibt es eine Suche nur über die eigenen Beiträge.
+Die eigenen Beiträge in „Meine Beiträge“, als volle Karten, ab vier Beiträgen in einklappbaren Abschnitten je Thema der Aussage, auf die sie antworten, meistgenutzte zuerst; Beiträge ohne Thema stehen zuletzt unter „Ohne Thema“; bis drei Beiträge stehen die Karten ohne Abschnitte untereinander. Ein Beitrag, dessen Aussage mehrere Themen hat, steht in jedem dieser Abschnitte. Oben ein Deckel mit der Zahl der Beiträge, ihrer Nutzung und der Themen; ohne jede Nutzung steht dort statt der Nutzung der nächste Meilenstein. Ab sieben Beiträgen gibt es eine Suche nur über die eigenen Beiträge.
 _Avoid_: Sammlung, Galerie, Profil
 
 **Zuordnungsart**:

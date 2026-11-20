@@ -302,6 +302,25 @@ describe('MeineBeitraegeComponent', () => {
     expect(karten().length).toBe(1);
   });
 
+  it('nimmt den gelöschten Beitrag sofort heraus und meldet, wenn das Nachladen scheitert', async () => {
+    let scheitern = false;
+    const antwort = [beitrag({ id: 'b1' }), beitrag({ id: 'b2' })];
+    verwalten.loeschen.and.returnValue(of(true));
+    konfigurieren(() => (scheitern ? throwError(() => new Error('weg')) : of({ beitraege: antwort, gesamt: 2 })));
+    await TestBed.compileComponents();
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
+    fixture.detectChanges();
+    const snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
+
+    scheitern = true;
+    album().loeschen.emit(album().eintraege[0].karte);
+    fixture.detectChanges();
+
+    expect(karten().length).toBe(1);
+    expect(snackBar.open).toHaveBeenCalledWith('Deine Beiträge ließen sich gerade nicht aktualisieren.', 'OK', { duration: 5000 });
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it('bietet bei einem Ladefehler einen neuen Versuch an, ohne „neu laden“', async () => {
     konfigurieren(() => throwError(() => new Error('weg')));
     await TestBed.compileComponents();

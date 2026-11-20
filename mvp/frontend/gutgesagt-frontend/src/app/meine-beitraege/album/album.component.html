@@ -48,16 +48,16 @@
 <div class="suche" *ngIf="mitSuche" role="search" aria-label="Eigene Beiträge durchsuchen"
      [class.suche--klebt]="klebt">
     <div class="suche-zeile">
-        <label class="feld feld--suche">
-            <span class="feld-name">{{ suchName }}</span>
+        <div class="feld feld--suche">
+            <label class="feld-name" for="album-suche">{{ suchName }}</label>
             <mat-icon class="feld-symbol" aria-hidden="true">search</mat-icon>
-            <input #suchfeld type="search" autocomplete="off" enterkeyhint="search"
+            <input #suchfeld id="album-suche" type="search" autocomplete="off" enterkeyhint="search"
                    (input)="sucheGetippt(suchfeld.value)">
             <button type="button" class="leeren" *ngIf="filter.suche" aria-label="Suchtext löschen"
-                    (click)="sucheLeeren(suchfeld)">
+                    (click)="sucheLeeren()">
                 <mat-icon aria-hidden="true">close</mat-icon>
             </button>
-        </label>
+        </div>
         <!-- Am Handy, wenn die Leiste klebt: Thema, Stil und „genutzt“ hinter einem Knopf -->
         <button type="button" class="chip filter-knopf" *ngIf="istMobil && klebt"
                 [attr.aria-expanded]="filterOffen" aria-controls="album-filter"
@@ -88,7 +88,7 @@
 
     <div class="treffer">
         <span aria-live="polite" data-testid="treffer">{{ trefferText }}</span>
-        <button type="button" class="textknopf" *ngIf="aktiv" (click)="zuruecksetzen(suchfeld)">Filter zurücksetzen</button>
+        <button type="button" class="textknopf" *ngIf="aktiv" (click)="zuruecksetzen()">Filter zurücksetzen</button>
     </div>
 </div>
 
@@ -141,11 +141,11 @@
 
 <!-- Ein Platz im Album: die Karte, bei Nutzung mit gruener Lasche (die Zahl steht auch in der Karte) -->
 <ng-template #platz let-eintrag>
-    <li class="platz" tabindex="-1" [class.platz--genutzt]="eintrag.karte.nutzung">
+    <li class="platz" tabindex="-1" [class.platz--genutzt]="eintrag.karte.nutzung" [attr.data-id]="eintrag.karte.id">
         <span class="lasche" *ngIf="eintrag.karte.nutzung" aria-hidden="true">🌱 {{ eintrag.karte.nutzung }}× genutzt</span>
         <app-beitragskarte [daten]="eintrag.karte" variante="voll" [eigenesAlbum]="true"
                            [abstimmenSichtbar]="false"
-                           (aendern)="aendern.emit($event)" (loeschen)="loeschen.emit($event)">
+                           (aendern)="aendern.emit($event)" (loeschen)="loeschenAngetippt($event)">
         </app-beitragskarte>
     </li>
 </ng-template>

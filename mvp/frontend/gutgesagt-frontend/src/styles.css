@@ -850,5 +850,5 @@ mat-sidenav-content:has(app-album .suche) {
 
 /* Fokus nicht verdeckt (WCAG 2.4.11): Was per Tastatur in den Blick scrollt, bleibt unter der klebenden Suche sichtbar. */
 html:has(app-album .suche) {
-    scroll-padding-top: 140px;
+    scroll-padding-top: 180px;
 }

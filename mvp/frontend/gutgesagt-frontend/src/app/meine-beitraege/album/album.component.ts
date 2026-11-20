@@ -107,6 +107,9 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
   filterOffen = false;
 
   @ViewChild('marke') private marke?: ElementRef<HTMLElement>;
+  @ViewChild('suchfeld') private suchfeld?: ElementRef<HTMLInputElement>;
+  /** Nach „Beitrag löschen“: wo der Fokus hin soll, sobald die Liste ohne ihn kommt. */
+  private fokusNachLoeschen: { id: string; folgende: string[]; abschnitt: string | null } | null = null;
   private beobachter?: IntersectionObserver;
   private readonly suche$ = new Subject<string>();
   private readonly abos = new Subscription();
@@ -119,8 +122,7 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
   ) {
     this.abos.add(
       this.suche$.pipe(debounceTime(SUCHE_WARTEN_MS)).subscribe((suche) => {
-        this.filter = { ...this.filter, suche };
-        this.neuRechnen();
+        this.filterSetzen({ ...this.filter, suche });
       }),
     );
     this.abos.add(
@@ -133,6 +135,7 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   ngOnChanges(): void {
     this.neuRechnen();
+    this.fokusNachdemGeloescht();
   }
 
   ngAfterViewInit(): void {
@@ -223,35 +226,43 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.suche$.next(wert);
   }
 
-  sucheLeeren(feld: HTMLInputElement): void {
-    feld.value = '';
-    this.filter = { ...this.filter, suche: '' };
-    this.neuRechnen();
-    feld.focus();
+  sucheLeeren(): void {
+    this.filterSetzen({ ...this.filter, suche: '' });
+    this.suchfeldLeeren();
   }
 
   themaGewaehlt(wert: string): void {
-    this.filter = { ...this.filter, thema: wert || null };
-    this.neuRechnen();
+    this.filterSetzen({ ...this.filter, thema: wert || null });
   }
 
   stilGewaehlt(wert: string): void {
-    this.filter = { ...this.filter, stil: (wert || null) as Stil | null };
-    this.neuRechnen();
+    this.filterSetzen({ ...this.filter, stil: (wert || null) as Stil | null });
   }
 
   genutztUmschalten(): void {
-    this.filter = { ...this.filter, nurGenutzt: !this.filter.nurGenutzt };
+    this.filterSetzen({ ...this.filter, nurGenutzt: !this.filter.nurGenutzt });
+  }
+
+  /** Alles zuruecksetzen, auch den Text im Suchfeld; der Fokus geht ins Suchfeld. */
+  zuruecksetzen(): void {
+    this.filterSetzen({ ...KEIN_FILTER });
+    this.suchfeldLeeren();
+  }
+
+  /** Ein neuer Filter oeffnet die Abschnitte neu: Was unter dem alten auf- oder zugeklappt war, gilt nicht mehr. */
+  private filterSetzen(filter: AlbumFilter): void {
+    this.filter = filter;
+    this.umgeschaltet.clear();
     this.neuRechnen();
   }
 
-  zuruecksetzen(feld?: HTMLInputElement): void {
+  private suchfeldLeeren(): void {
+    this.cdr.detectChanges();
+    const feld = this.suchfeld?.nativeElement;
     if (feld) {
       feld.value = '';
+      feld.focus();
     }
-    this.filter = { ...KEIN_FILTER };
-    this.neuRechnen();
-    feld?.focus();
   }
 
   filterUmschalten(): void {
@@ -260,12 +271,9 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   // Abschnitte
 
-  /** Mit Filter sind alle Abschnitte mit Treffern offen; sonst der erste und was jemand aufklappt. */
+  /** Mit Filter sind anfangs alle Abschnitte mit Treffern offen, sonst der erste; was jemand umschaltet, gilt. */
   offen(abschnitt: AlbumAbschnitt, index: number): boolean {
-    if (this.aktiv) {
-      return true;
-    }
-    return this.umgeschaltet.get(abschnitt.thema.schluessel) ?? index === 0;
+    return this.umgeschaltet.get(abschnitt.thema.schluessel) ?? (this.aktiv || index === 0);
   }
 
   umschalten(abschnitt: AlbumAbschnitt, index: number): void {
@@ -286,6 +294,53 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
     liste?.querySelectorAll<HTMLElement>('.platz')[KARTEN_JE_ABSCHNITT]?.focus();
   }
 
+  /**
+   * „Beitrag löschen“ an einer Karte: an die Seite melden und vormerken, wohin der Fokus
+   * geht, wenn die Karte verschwindet (sonst fiele er auf die Seite, 2.4.3): auf die naechste
+   * Karte im selben Abschnitt, sonst die vorige, sonst den Abschnittskopf.
+   */
+  loeschenAngetippt(karte: KartenDaten): void {
+    const platz = this.host.nativeElement.querySelector<HTMLElement>(`.platz[data-id="${CSS.escape(karte.id)}"]`);
+    const liste = platz?.parentElement;
+    const plaetze = liste ? Array.from(liste.querySelectorAll<HTMLElement>(':scope > .platz')) : [];
+    const index = platz ? plaetze.indexOf(platz) : -1;
+    const folgende = [...plaetze.slice(index + 1), ...plaetze.slice(0, Math.max(index, 0)).reverse()]
+      .map((p) => p.dataset['id'] ?? '')
+      .filter((id) => !!id);
+    const abschnitt = platz?.closest<HTMLElement>('.abschnitt')?.dataset['thema'] ?? null;
+    this.fokusNachLoeschen = { id: karte.id, folgende, abschnitt };
+    // Der Abschnitt bleibt offen, auch wenn er nach dem Loeschen weiter unten einsortiert wird.
+    if (abschnitt) {
+      this.umgeschaltet.set(abschnitt, true);
+    }
+    this.loeschen.emit(karte);
+  }
+
+  private fokusNachdemGeloescht(): void {
+    const ziel = this.fokusNachLoeschen;
+    if (!ziel || this.eintraege.some((e) => e.karte.id === ziel.id)) {
+      return;
+    }
+    this.fokusNachLoeschen = null;
+    // Erst nach dem Zeichnen der neuen Liste, sonst sitzt der Fokus auf einem Element, das gleich ersetzt wird.
+    setTimeout(() => this.fokusSetzen(ziel));
+  }
+
+  private fokusSetzen(ziel: { folgende: string[]; abschnitt: string | null }): void {
+    const wurzel = this.host.nativeElement;
+    for (const id of ziel.folgende) {
+      const platz = wurzel.querySelector<HTMLElement>(`.platz[data-id="${CSS.escape(id)}"]`);
+      if (platz) {
+        platz.focus();
+        return;
+      }
+    }
+    const kopf = ziel.abschnitt
+      ? wurzel.querySelector<HTMLElement>(`.abschnitt[data-thema="${CSS.escape(ziel.abschnitt)}"] .abschnitt-knopf`)
+      : null;
+    (kopf ?? wurzel.querySelector<HTMLElement>('.abschnitt-knopf, input[type="search"]'))?.focus();
+  }
+
   stand(abschnitt: AlbumAbschnitt): string {
     return abschnittStand(abschnitt);
   }
@@ -303,6 +358,11 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   private neuRechnen(): void {
+    // Unter SUCHE_AB gibt es keine Suchleiste und damit keinen Weg zurueck: dann auch keinen Filter.
+    if (!this.mitSuche && filterAktiv(this.filter)) {
+      this.filter = { ...KEIN_FILTER };
+      this.umgeschaltet.clear();
+    }
     this.zahlen = kennzahlen(this.eintraege);
     this.themen = themenAuswahl(this.eintraege);
     this.stile = stilAuswahl(this.eintraege);

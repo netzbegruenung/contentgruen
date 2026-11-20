@@ -161,7 +161,38 @@ describe('AlbumComponent', () => {
 
       expect(el().querySelector('[data-testid="nichts-gefunden"]')).toBeNull();
       expect(text('[data-testid="treffer"]')).toBe('10 Beiträge · nach Thema, meistgenutzte zuerst');
+      // Auch der Text im Feld ist weg, und der Fokus landet im Suchfeld statt auf der Seite
+      const leer = el().querySelector('input[type="search"]') as HTMLInputElement;
+      expect(leer.value).toBe('');
+      expect(document.activeElement).toBe(leer);
     }));
+
+    it('laesst unter einem Filter Abschnitte zuklappen', () => {
+      erstellen(viele(12, (i) => ({ usage_count: i % 2 ? 1 : 0 })));
+      (alle('.filter-zeile .chip')[0] as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const erster = alle('.abschnitt-knopf')[0] as HTMLButtonElement;
+
+      erster.click();
+      fixture.detectChanges();
+
+      expect(erster.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('nimmt den Filter weg, wenn nach dem Loeschen keine Suche mehr da ist (unter 7)', () => {
+      const sieben = viele(7, (i) => ({ usage_count: i < 3 ? 1 : 0 }));
+      erstellen(sieben);
+      (alle('.filter-zeile .chip')[0] as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.aktiv).toBeTrue();
+
+      fixture.componentRef.setInput('eintraege', sieben.slice(1));
+      fixture.detectChanges();
+
+      expect(el().querySelector('[role="search"]')).toBeNull();
+      expect(fixture.componentInstance.aktiv).toBeFalse();
+      expect(fixture.componentInstance.treffer).toBe(6);
+    });
 
     it('filtert mit „genutzt“ und oeffnet dann alle Abschnitte mit Treffern', () => {
       erstellen(viele(12, (i) => ({ usage_count: i % 4 === 0 ? 2 : 0 })));
@@ -272,6 +303,20 @@ describe('AlbumComponent', () => {
       expect(karte.querySelector('.stimme-knopf')).toBeNull();
       expect(karte.textContent).toContain('Antwort auf:');
     });
+
+    it('setzen nach dem Loeschen den Fokus auf die naechste Karte im Abschnitt', fakeAsync(() => {
+      const eintraege = viele(9);
+      erstellen(eintraege);
+      const plaetze = alle('#album-klima .platz');
+      const zweite = plaetze[1].getAttribute('data-id');
+
+      fixture.componentInstance.loeschenAngetippt(eintraege.find((e) => e.karte.id === plaetze[0].getAttribute('data-id'))!.karte);
+      fixture.componentRef.setInput('eintraege', eintraege.filter((e) => e.karte.id !== plaetze[0].getAttribute('data-id')));
+      fixture.detectChanges();
+      tick();
+
+      expect((document.activeElement as HTMLElement).getAttribute('data-id')).toBe(zweite);
+    }));
 
     it('melden Ändern und Löschen an die Seite', () => {
       erstellen(viele(4));
