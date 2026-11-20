@@ -143,7 +143,12 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   (Entscheidung Maintainer, 20.11.2026); ihre Zustimmung in Keycloak wird nicht übernommen.
 - **Sperren, serverseitig:** `require_art9_einwilligung` prüft vor der Einwilligung die Zustimmung
   und antwortet ohne sie mit 403 `nutzungsbedingungen_fehlen`, an genau den Endpunkten in
-  `GESPERRT` (und beim Ausformulieren). Die App behandelt das wie das fehlende
+  `GESPERRT` (und beim Ausformulieren). Dazu sperrt `require_nutzungsbedingungen` allein, was
+  ohne Art.-9-Daten für andere Sichtbares anlegt oder fremde Inhalte beeinflusst: Themen
+  zuordnen und einen Antwortvorschlag an eine Aussage hängen (`NB_NUR` in
+  `tests/unit/api/test_nutzungsbedingungen_api.py`). Offen bleiben Melden, Widerspruch,
+  Feedback, eigene Einstellungen (Punkte, Abzeichen), Besuch zählen, Löschen, Widerruf und
+  Konto beenden (Maßstab der juristischen Prüfung, 20.11.2026). Die App behandelt das wie das fehlende
   `art9_einwilligung_fehlt` (Hinweiskasten bzw. Snackbar, Weg auf `/einwilligung`).
 - **Neuer Stand der Nutzungsbedingungen:** in `STAENDE` eintragen und `AKTUELLER_STAND` setzen
   (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite

@@ -15,10 +15,13 @@ from fastapi.testclient import TestClient
 
 from api.v1.art9_einwilligung import router as art9_router
 from api.v1.nutzungsbedingungen import router as nb_router
+from fastapi.routing import APIRoute
+
 from dependencies import (
     ART9_EINWILLIGUNG_FEHLT,
     NUTZUNGSBEDINGUNGEN_FEHLEN,
     require_art9_einwilligung,
+    require_nutzungsbedingungen,
 )
 from domain.nutzungsbedingungen import (
     AKTUELLER_STAND,
@@ -218,3 +221,88 @@ class TestStaende:
 
         spalte = NutzungsbedingungenZustimmungZeile.__table__.c.stand
         assert spalte.type.length == STAND_KENNUNG_MAX
+
+
+# Welche schreibenden Endpunkte die Zustimmung zu den Nutzungsbedingungen verlangen.
+# Massstab (juristische Pruefung 20.11.2026): gesperrt ist, was Inhalte anlegt oder
+# aendert, die andere sehen, oder fremde Inhalte beeinflusst. Alles mit
+# require_art9_einwilligung (GESPERRT in test_art9_einwilligung_api.py) zaehlt dazu,
+# dazu diese beiden ohne Art.-9-Daten:
+NB_NUR = {
+    # Die Zuordnung sehen alle im Themenfilter.
+    ("PUT", "/api/v1/statement/themen/zuordnen"),
+    # Haengt einen Beitrag als Antwort an eine Aussage, sichtbar fuer alle.
+    ("POST", "/api/v1/statement/addReplysuggestionToStatement"),
+}
+
+
+def _nb_gesperrte_routen():
+    from main import app
+
+    gesperrt = set()
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        calls = {d.call for d in route.dependant.dependencies}
+        if calls & {require_art9_einwilligung, require_nutzungsbedingungen}:
+            gesperrt |= {(m, route.path) for m in route.methods}
+    return gesperrt
+
+
+def test_nb_sperre_genau_art9_gesperrte_und_nb_nur():
+    from tests.unit.api.test_art9_einwilligung_api import GESPERRT
+
+    assert _nb_gesperrte_routen() == GESPERRT | NB_NUR
+
+
+def test_offen_ohne_zustimmung_bleibt_was_niemand_anderes_sieht():
+    """
+    Ein neuer schreibender Endpunkt faellt in test_art9_einwilligung_api.py auf
+    (GESPERRT/OFFEN). Was dort OFFEN ist, bleibt ohne Zustimmung offen, ausser NB_NUR:
+    Melden, Widerspruch, Feedback, eigene Einstellungen, Besuch zaehlen, Suchen, die
+    Zustimmung und die Einwilligung selbst, Admin-Endpunkte. Loeschen und Widerruf
+    (DELETE) sperrt nichts.
+    """
+    from tests.unit.api.test_art9_einwilligung_api import OFFEN
+
+    assert NB_NUR <= OFFEN
+    gesperrt = _nb_gesperrte_routen()
+    assert not [e for e in gesperrt if e[0] == "DELETE"]
+    for offen in [
+        ("POST", "/api/v1/moderation/report"),
+        ("POST", "/api/v1/sperren/{sperre_id}/widerspruch"),
+        ("POST", "/api/v1/feedback/senden"),
+        ("PUT", "/api/v1/usage/users/me/punkte-einwilligung"),
+        ("PUT", "/api/v1/usage/users/me/abzeichen-sichtbarkeit"),
+        ("POST", "/api/v1/usage/users/me/besuch"),
+        ("POST", "/api/v1/nutzungsbedingungen"),
+        ("POST", "/api/v1/art9-einwilligung"),
+    ]:
+        assert offen not in gesperrt
+
+
+class TestNurNutzungsbedingungen:
+    @pytest.fixture
+    def nb_client(self):
+        app = FastAPI()
+
+        @app.put("/zuordnen", dependencies=[Depends(require_nutzungsbedingungen)])
+        def zuordnen():
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def test_ohne_zustimmung_403(self, nb_client, repository):
+        repository.lesen.return_value = None
+
+        antwort = nb_client.put("/zuordnen", headers=PERSON)
+
+        assert antwort.status_code == 403
+        assert antwort.json() == {"detail": NUTZUNGSBEDINGUNGEN_FEHLEN}
+
+    def test_ohne_einwilligung_aber_mit_zustimmung_frei(
+        self, nb_client, art9_einwilligung_ohne_datenbank
+    ):
+        art9_einwilligung_ohne_datenbank.lesen.return_value = None
+
+        assert nb_client.put("/zuordnen", headers=PERSON).status_code == 200

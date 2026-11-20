@@ -631,6 +631,24 @@ ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
 NUTZUNGSBEDINGUNGEN_FEHLEN = "nutzungsbedingungen_fehlen"
 
 
+def require_nutzungsbedingungen(
+    x_user: Optional[str] = Header(None, alias="X-User"),
+) -> None:
+    """
+    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende Zustimmung zu den
+    Nutzungsbedingungen (403 ``nutzungsbedingungen_fehlen``). Fuer Endpunkte, die etwas
+    fuer andere Sichtbares anlegen oder fremde Inhalte beeinflussen, aber keine
+    Art.-9-Daten speichern (Themen zuordnen, Antwortvorschlag an eine Aussage haengen);
+    wo die Art.-9-Einwilligung noetig ist, prueft ``require_art9_einwilligung`` beides.
+    Die Liste prueft ``tests/unit/api/test_nutzungsbedingungen_api.py`` (NB_GESPERRT,
+    NB_OFFEN). Ohne Anmeldung laesst sie durch; ob jemand angemeldet sein muss,
+    entscheidet der Endpunkt (am BFF sind beide nur angemeldet erreichbar).
+    """
+    if not angemeldet(x_user):
+        return
+    _nutzungsbedingungen_pruefen(x_user)
+
+
 def _nutzungsbedingungen_pruefen(x_user: str) -> None:
     """403, wenn die angemeldete Person den Nutzungsbedingungen nicht zugestimmt hat."""
     try:
