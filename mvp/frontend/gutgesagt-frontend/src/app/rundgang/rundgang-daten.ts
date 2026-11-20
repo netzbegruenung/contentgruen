@@ -240,7 +240,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
     schritte: [
       {
         titel: 'Beitragen',
-        text: 'Hier geht es zu allem, womit du mitmachst: einwerfen, weiterarbeiten und Beiträge verfassen.',
+        text: 'Hier geht es zu allem, womit du mitmachst: einwerfen, destillieren, ausformulieren oder direkt verfassen.',
         ziel: '.beitragen-knopf, .mobile-header .contribute-button',
       },
       {

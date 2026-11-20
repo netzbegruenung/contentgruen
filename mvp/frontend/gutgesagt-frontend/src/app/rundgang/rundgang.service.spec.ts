@@ -226,13 +226,14 @@ describe('RundgangService', () => {
 
     it('geht in Selbst beitragen die drei Schritte der Beitragen-Seite durch, dann Meine Beiträge (20.11.)', () => {
       const schritte = RUNDGAENGE['mitmachen'].schritte;
-      expect(schritte.map((s) => s.titel)).toEqual(['Beitragen', 'Einwerfen', 'Destillieren', 'Ausformulieren', 'Meine Beiträge']);
-      expect(schritte.slice(1).map((s) => s.ziel)).toEqual([
-        '.einwerfen-block',
-        '.destillieren-block',
-        '.ausformulieren-block',
-        '.beitraege-block',
+      expect(schritte.map((s) => s.titel)).toEqual([
+        'Beitragen',
+        'Einwerfen',
+        'Destillieren',
+        'Ausformulieren',
+        'Meine Beiträge',
       ]);
+      // Dass die Ziele auf der Seite stehen, prueft contribute-view.component.spec.ts
       expect(MITMACHEN_ANGEBOT.satz).toBe(
         'Drei Schritte: Fundstücke einwerfen, Einwürfe destillieren und Sätze zu Beiträgen ausformulieren.',
       );

@@ -6,6 +6,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { RUNDGAENGE } from '../rundgang/rundgang-daten';
 
 describe('ContributeViewComponent', () => {
   let fixture: ComponentFixture<ContributeViewComponent>;
@@ -87,6 +88,14 @@ describe('ContributeViewComponent', () => {
 
       knopf.click();
       expect(router.navigate).toHaveBeenCalledWith(['/contributions']);
+    });
+
+    it('traegt jedes Ziel des Rundgangs Selbst beitragen, das auf dieser Seite spielt', () => {
+      const ziele = RUNDGAENGE['mitmachen'].schritte.filter((s) => s.seite?.pfad === '/contribute').map((s) => s.ziel);
+      expect(ziele.length).toBe(4);
+      for (const ziel of ziele) {
+        expect(fixture.nativeElement.querySelector(ziel)).withContext(ziel).not.toBeNull();
+      }
     });
 
     it('nutzt einen Kartenstil fuer alle Zeilen', () => {
