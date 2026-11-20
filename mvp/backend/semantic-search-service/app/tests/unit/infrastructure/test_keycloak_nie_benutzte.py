@@ -123,6 +123,13 @@ def test_link_bestaetigt_aber_nie_ein_passwort_wird_geloescht():
                 emailVerified=True,
                 requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
             ),
+            # Nutzungsbedingungen angenommen, dann auf der Passwortseite abgebrochen:
+            # Keycloak hat TERMS_AND_CONDITIONS schon vom Konto genommen.
+            _konto(
+                "nach-bedingungen",
+                emailVerified=True,
+                requiredActions=["UPDATE_PASSWORD"],
+            ),
             _konto(
                 "abgebrochen-jung",
                 angelegt=NACHHER,
@@ -134,8 +141,8 @@ def test_link_bestaetigt_aber_nie_ein_passwort_wird_geloescht():
 
     anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
 
-    assert anzahl == 1
-    assert keycloak.geloescht() == ["abgebrochen"]
+    assert anzahl == 2
+    assert keycloak.geloescht() == ["abgebrochen", "nach-bedingungen"]
 
 
 def test_beta_zugang_und_vorab_angelegte_bleiben_ohne_nachfrage():

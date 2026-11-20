@@ -395,10 +395,10 @@ und der Ablauf oben erfasst die Tabelle nicht.
   steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
   Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
-- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Pflichtaktion
-  „Terms and Conditions“ offen, kein Passwort (kein Credential), keine Verknüpfung mit einem
-  Identity Provider, und dazu Mail-Adresse nicht bestätigt oder „Passwort festlegen“ noch am
-  Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): kein Passwort
+  (kein Credential), keine Verknüpfung mit einem Identity Provider, und dazu entweder
+  Mail-Adresse nicht bestätigt und Pflichtaktion „Terms and Conditions“ offen, oder „Passwort
+  festlegen“ noch am Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
   angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
   sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
   unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
@@ -408,8 +408,12 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Bricht sie danach ab, ist die Adresse bestätigt, aber „Passwort festlegen“
   (`UPDATE_PASSWORD`) steht noch am Konto; Keycloak nimmt es erst weg, wenn ein Passwort gesetzt
   ist. Auch ein solches Konto gilt als nie benutzt und geht nach derselben Frist (Entscheidung
-  20.11.). Beta-Zugänge (#488) tragen „Passwort festlegen“ nicht am Konto und bleiben, auch
-  ohne Passwort: Ihre Beiträge sind schon dorthin umgezogen.
+  20.11.), auch wenn sie den Nutzungsbedingungen schon zugestimmt hat. Beta-Zugänge (#488)
+  tragen „Passwort festlegen“ nicht am Konto und bleiben, auch ohne Passwort: Ihre Beiträge
+  sind schon dorthin umgezogen. Das Merkmal tragen erst Konten, die nach dieser Änderung
+  über eine Einladung entstehen; ältere mit bestätigter Adresse und ohne Passwort bleiben.
+  Wird ein solches Konto später mit dem Netzbegrünung-Login verknüpft, fragt Keycloak beim
+  ersten Anmelden einmal nach einem Passwort.
 
 ## Vier Fallen
 

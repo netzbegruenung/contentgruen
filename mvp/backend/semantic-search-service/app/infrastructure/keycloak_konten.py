@@ -350,15 +350,16 @@ class KeycloakKonten:
     def nie_benutzte_loeschen(self, angelegt_vor: datetime) -> int:
         """
         Loescht Konten, die vor ``angelegt_vor`` angelegt und nie benutzt wurden, und
-        gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Die
-        Pflichtaktion aus dem Anlegen steht noch aus, es gibt kein Credential (also kein
-        Passwort) und keine Verknuepfung mit einem Identity Provider, und dazu eines von
-        beiden:
+        gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Es gibt kein
+        Credential (also kein Passwort) und keine Verknuepfung mit einem Identity
+        Provider, und dazu eines von beiden:
 
-        - Die Mail-Adresse ist nicht bestaetigt: Den Link hat niemand geoeffnet.
+        - Die Mail-Adresse ist nicht bestaetigt und die Pflichtaktion aus dem Anlegen
+          steht noch aus: Den Link hat niemand geoeffnet.
         - "Passwort festlegen" steht noch am Konto (EINLADUNG_PFLICHTAKTIONEN): Den Link
           hat jemand geoeffnet und bestaetigt (VERIFY_EMAIL in MAIL_AKTIONEN bestaetigt
-          dabei die Adresse), aber nie ein Passwort gesetzt.
+          dabei die Adresse), vielleicht auch den Nutzungsbedingungen zugestimmt, aber
+          nie ein Passwort gesetzt.
 
         Vorab angelegte Konten (#487) sind verknuepft; Beta-Zugaenge (#488) sind
         bestaetigt und tragen "Passwort festlegen" nicht am Konto.
@@ -419,9 +420,12 @@ class KeycloakKonten:
 def _sieht_nie_benutzt_aus(konto: Mapping[str, object]) -> bool:
     """Die Bedingungen aus nie_benutzte_loeschen, die am Konto selbst stehen."""
     aktionen = set(konto.get("requiredActions") or [])  # type: ignore[arg-type]
-    if not set(PFLICHTAKTIONEN) <= aktionen:
-        return False
-    return konto.get("emailVerified") is False or "UPDATE_PASSWORD" in aktionen
+    # Ohne Nutzungsbedingungen: Keycloak fragt sie vor dem Passwort ab (Prioritaet 20
+    # vor 57, DefaultRequiredActions) und nimmt sie nach der Zustimmung vom Konto. Wer
+    # zustimmt und auf der Passwortseite abbricht, traegt nur noch UPDATE_PASSWORD.
+    if "UPDATE_PASSWORD" in aktionen:
+        return True
+    return set(PFLICHTAKTIONEN) <= aktionen and konto.get("emailVerified") is False
 
 
 def _konto(
