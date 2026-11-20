@@ -18,6 +18,6 @@ describe('AboutTeaserComponent', () => {
     expect(teaser.querySelector('a')!.getAttribute('href')).toBe('/about');
     expect(teaser.querySelector('.cta-container')!.nextElementSibling!.classList).toContain('zitat');
     expect(teaser.querySelector('.zitat blockquote')!.textContent).toContain('Antworten, die Unentschiedene mitnehmen');
-    expect(teaser.querySelector('.zitat img')!.getAttribute('src')).toBe('/profilbild-2026.jpg');
+    expect(teaser.querySelector('.zitat img')!.getAttribute('src')).toBe('/profilbild-2026-11.jpg');
   });
 });

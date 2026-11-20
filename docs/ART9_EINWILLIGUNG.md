@@ -111,6 +111,62 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 - **Löschen und Umstellen:** Die Zeile (und die in `art9_ohne_einwilligung`) geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
 
+## Nutzungsbedingungen auf derselben Seite
+
+Neue Konten stimmen nur noch einmal in der App zu (Entscheidung Maintainer, 20.11.2026):
+`/einwilligung` fragt, solange die Zustimmung zu den Nutzungsbedingungen in der App fehlt,
+beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
+
+- **Nutzungsbedingungen:** Pflicht, Link auf `/nutzungsbedingungen` mit Stand direkt am Häkchen.
+  Das Häkchen heißt nie „Einwilligung“; einen Knopf „Alle annehmen“ gibt es nicht. „Weiter“
+  ohne dieses Häkchen zeigt eine Fehlermeldung daran (`role="alert"`, per
+  `aria-describedby` verbunden) und setzt den Fokus auf das Häkchen.
+- **Art.-9-Einwilligung:** freiwillig, ohne Pflichtzeichen, „Freiwillig, nötig zum Mitmachen“
+  und der Hinweis auf den Widerruf direkt darunter (Art. 7 Abs. 3 S. 3 DSGVO). „Weiter“ geht mit
+  den Nutzungsbedingungen allein; dann merkt sich das Konto „ohne Einwilligung weiter“ wie oben (B2),
+  Lesen und Suchen gehen, gesperrt bleibt wie bisher. Wer schon eingewilligt hat, sieht nur das
+  erste Häkchen.
+- **Texte:** Die Sätze um die Häkchen stehen in
+  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung-texte.ts` (freigegeben am
+  20.11.2026); den Wortlaut der Einwilligung liefert weiter das Backend.
+- **Speichern:** Tabelle `nutzungsbedingungen_zustimmungen`, je Zustimmung eine Zeile mit Kennung
+  der Person, Zeitpunkt und Stand der Nutzungsbedingungen (Kennung `JJJJ-MM-TT` wie der Ordner in
+  `docs/nutzungsbedingungen-staende/`; `STAENDE`, `AKTUELLER_STAND` und `GELTENDE_STAENDE` in
+  `mvp/backend/semantic-search-service/app/domain/nutzungsbedingungen.py`). Es gilt die jüngste
+  Zeile; ein Widerruf ist nicht vorgesehen, wer nicht mehr will, lässt das Konto löschen. Die Zeilen
+  gehen mit dem Konto (`person_loeschen.sql`) und ziehen beim Umstellen der Kennungen mit.
+  Endpunkte: `GET`/`POST /api/v1/nutzungsbedingungen`; den Stand liefert auch
+  `GET /api/v1/art9-einwilligung` im Feld `nutzungsbedingungen`, damit die App nach dem Anmelden
+  mit einer Abfrage entscheidet.
+- **Hinführen:** `zurEinwilligungUmleiten` führt ohne Zustimmung immer auf `/einwilligung`, auch
+  wer zur Einwilligung schon entschieden hat. So werden Bestandskonten einmal neu gefragt
+  (Entscheidung Maintainer, 20.11.2026); ihre Zustimmung in Keycloak wird nicht übernommen.
+- **Sperren, serverseitig:** `require_art9_einwilligung` prüft vor der Einwilligung die Zustimmung
+  und antwortet ohne sie mit 403 `nutzungsbedingungen_fehlen`, an genau den Endpunkten in
+  `GESPERRT` (und beim Ausformulieren). Dazu sperrt `require_nutzungsbedingungen` allein, was
+  ohne Art.-9-Daten für andere Sichtbares anlegt oder fremde Inhalte beeinflusst: Themen
+  zuordnen und einen Antwortvorschlag an eine Aussage hängen (`NB_NUR` in
+  `tests/unit/api/test_nutzungsbedingungen_api.py`). Offen bleiben Melden, Widerspruch,
+  Feedback, eigene Einstellungen (Punkte, Abzeichen), Besuch zählen, Suchen, Löschen, Widerruf
+  und Konto beenden (Maßstab der juristischen Prüfung, 20.11.2026). Bewusst offen bleibt auch das
+  Zählen einer Kopie (`POST /api/v1/usage/content/{content_id}/usage`), obwohl es die Zähler
+  fremder Beiträge bewegt: Es zählt auch ohne Konto, eine Sperre nur für Angemeldete wäre
+  wirkungslos. Admins brauchen die Zustimmung auch auf ihrer Seite „Themen zuordnen“ (derselbe
+  Endpunkt). Die App behandelt das wie das fehlende
+  `art9_einwilligung_fehlt` (Hinweiskasten bzw. Snackbar, Weg auf `/einwilligung`).
+- **Neuer Stand der Nutzungsbedingungen:** in `STAENDE` eintragen und `AKTUELLER_STAND` setzen
+  (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite
+  passt). Reine Korrektur: in `GELTENDE_STAENDE` aufnehmen, niemand wird neu gefragt. Wesentlich:
+  `GELTENDE_STAENDE` nur mit dem neuen Stand, alle werden beim nächsten Besuch neu gefragt.
+- **Keycloak:** Die Pflichtaktion „Terms and Conditions“ entfällt mit 0.9.8: `PFLICHTAKTIONEN` in
+  `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend ins Archiv exportieren
+  (`docs/LOESCHKONZEPT.md`, Fristen), 0.9.8 live und die Seite prüfen, das Archiv direkt vor
+  dem Abschalten noch einmal schreiben, die Pflichtaktion im Realm abschalten, dann das
+  Attribut `terms_and_conditions` in der Datenbank von Keycloak löschen (Pflicht; die
+  Admin-Schnittstelle schreibt es nie; `docs/KEYCLOAK_REALM.md`, „Attribut der alten
+  Zustimmung löschen“). Bis zum Abschalten fragt Keycloak kurz doppelt; andersherum entstünden
+  Konten ohne Zustimmung.
+
 ## Wortlaut ändern
 
 Der Wortlaut steht an einer Stelle: `WORTLAUTE` in
@@ -188,14 +244,14 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
 - **Vision:** `docs/VISION.md`, Abschnitt mit „Meilensteine“ (Abzeichen nur mit Opt-in) und
   „Ranglisten“ (Zustimmung, Art. 9).
 - **Datenschutzerklärung:** `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`,
-  „Rückschlüsse auf deine politische Haltung“ → „Deine Einwilligung“ (Kennungsformat, Folgen,
+  „Rückschlüsse auf deine politische Haltung“ → „Deine Zustimmung und deine Einwilligung“ (Kennungsformat, Folgen,
   Widerruf) und „Punkte“ (Rechtsgrundlage, ohne Einwilligung keine Punkte); Spec
   `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.spec.ts`
   (`describe`-Blöcke „Rückschlüsse auf die politische Haltung“ und „Entdoppelte Nutzung, Punkte
   und Muster-Hinweise“).
 - **Lückenliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit
   #296) und `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md` (fasst „Deine
-  Einwilligung“ samt Widerrufsfolgen zusammen).
+  Einwilligung“, seit 0.9.8 „Deine Zustimmung und deine Einwilligung“, samt Widerrufsfolgen zusammen).
 
 - **Seite `/einwilligung`:** `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.html`
   zeigt den Wortlaut vom Backend, wiederholt aber in eigenen Sätzen, was ohne Einwilligung

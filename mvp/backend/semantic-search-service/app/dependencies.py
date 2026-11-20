@@ -16,7 +16,7 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import angemeldet, get_anzeigename_service
-from services import art9_einwilligung_service
+from services import art9_einwilligung_service, nutzungsbedingungen_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_aendern_service import BeitragAendernService
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
@@ -626,18 +626,64 @@ def require_user(
 ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
 
 
+# Antworttext, an dem das Frontend erkennt, dass die Zustimmung zu den
+# Nutzungsbedingungen fehlt (auth.interceptor.ts), und dann auf /einwilligung fuehrt.
+NUTZUNGSBEDINGUNGEN_FEHLEN = "nutzungsbedingungen_fehlen"
+
+
+def require_nutzungsbedingungen(
+    x_user: Optional[str] = Header(None, alias="X-User"),
+) -> None:
+    """
+    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende Zustimmung zu den
+    Nutzungsbedingungen (403 ``nutzungsbedingungen_fehlen``). Fuer Endpunkte, die etwas
+    fuer andere Sichtbares anlegen oder fremde Inhalte beeinflussen, aber keine
+    Art.-9-Daten speichern (Themen zuordnen, Antwortvorschlag an eine Aussage haengen);
+    wo die Art.-9-Einwilligung noetig ist, prueft ``require_art9_einwilligung`` beides.
+    Die Liste prueft ``tests/unit/api/test_nutzungsbedingungen_api.py`` (NB_NUR, mit
+    GESPERRT aus test_art9_einwilligung_api.py). Ohne Anmeldung laesst sie durch; ob jemand angemeldet sein muss,
+    entscheidet der Endpunkt (am BFF sind beide nur angemeldet erreichbar).
+    """
+    if not angemeldet(x_user):
+        return
+    _nutzungsbedingungen_pruefen(x_user)
+
+
+def _nutzungsbedingungen_pruefen(x_user: str) -> None:
+    """403, wenn die angemeldete Person den Nutzungsbedingungen nicht zugestimmt hat."""
+    try:
+        zugestimmt = (
+            nutzungsbedingungen_service.get_nutzungsbedingungen_service().zugestimmt(
+                x_user
+            )
+        )
+    except Exception as e:
+        logger.error(
+            f"Zustimmung zu den Nutzungsbedingungen nicht lesbar: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    if not zugestimmt:
+        raise HTTPException(status_code=403, detail=NUTZUNGSBEDINGUNGEN_FEHLEN)
+
+
 def require_art9_einwilligung(
     x_user: Optional[str] = Header(None, alias="X-User"),
 ) -> None:
     """
-    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende
-    Art.-9-Einwilligung (#489) mit 403. Ob jemand angemeldet sein muss,
-    entscheidet der Endpunkt selbst; ohne Anmeldung laesst diese Pruefung durch.
+    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende Zustimmung zu den
+    Nutzungsbedingungen (403 ``nutzungsbedingungen_fehlen``) oder ohne geltende
+    Art.-9-Einwilligung (#489, 403 ``art9_einwilligung_fehlt``), in dieser
+    Reihenfolge. Beides in einer Pruefung, damit jeder gesperrte Endpunkt, auch einer,
+    der sie selbst aufruft (Ausformulieren in api/v1/einwurf.py), beides verlangt. Ob
+    jemand angemeldet sein muss, entscheidet der Endpunkt selbst; ohne Anmeldung laesst
+    diese Pruefung durch.
 
     Synchron, damit FastAPI sie im Threadpool ausfuehrt: Sie fragt die Datenbank.
     """
     if not angemeldet(x_user):
         return
+    _nutzungsbedingungen_pruefen(x_user)
     try:
         eingewilligt = (
             art9_einwilligung_service.get_art9_einwilligung_service().eingewilligt(

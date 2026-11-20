@@ -39,8 +39,7 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
  *
  * Das Bild fuellt den Host und erbt von ihm ``object-fit``, ``max-height``,
  * ``border-radius`` und ``background``; Groesse und Zuschnitt bestimmt also die Stelle,
- * die die Komponente einbindet. Die Mindesthoehe des Platzhalters setzt sie ueber
- * ``--fremdes-bild-hoehe`` (Standard 96px, ``0`` fuer ein Band fester Hoehe).
+ * die die Komponente einbindet. Der Platzhalter ist mindestens 96px hoch.
  */
 @Component({
   selector: 'app-fremdes-bild',
@@ -53,7 +52,7 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
 export class FremdesBildComponent implements OnChanges {
   @Input({ required: true }) src!: string;
   @Input() alt = '';
-  /** Ohne Symbol, wo schon eines daneben steht (Kopfband der Album-Karte). */
+  /** Ohne Symbol im Platzhalter, wo die einbindende Stelle schon eines zeigt. */
   @Input() mitSymbol = true;
 
   protected geladen = false;

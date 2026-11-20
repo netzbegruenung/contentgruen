@@ -61,6 +61,8 @@ DELETE FROM art9_einwilligungen WHERE user_id         = :'uid';
 DELETE FROM art9_ohne_einwilligung WHERE user_id      = :'uid';
 DELETE FROM abzeichen_sichtbarkeit WHERE user_id      = :'uid';
 DELETE FROM punkte_einwilligung WHERE user_id         = :'uid';
+-- Zustimmung zu den Nutzungsbedingungen in der App
+DELETE FROM nutzungsbedingungen_zustimmungen WHERE user_id = :'uid';
 -- Loeschauftraege nach einem Widerruf, offene wie erledigte: Die Kontoloeschung
 -- erledigt mehr als jeder Auftrag.
 DELETE FROM loeschauftraege WHERE user_id             = :'uid';

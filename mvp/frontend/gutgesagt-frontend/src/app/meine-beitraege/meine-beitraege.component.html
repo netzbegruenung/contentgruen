@@ -23,7 +23,12 @@
         </div>
 
         <div *ngIf="!isLoading">
-            <ng-container *ngIf="!karten.length">
+            <p *ngIf="ladefehler" class="hinweis-box" role="alert">
+                Deine Beiträge ließen sich gerade nicht laden.
+                <button mat-button type="button" class="nochmal-knopf" (click)="laden()">Noch einmal versuchen</button>
+            </p>
+
+            <ng-container *ngIf="!eintraege.length && !ladefehler">
                 <p class="beitraege-leer">Du hast noch keine Beiträge.</p>
                 <!-- Ein konkreter erster Schritt statt nur "Beitragen" (#645) -->
                 <section *ngIf="unbeantworteteAussagen.length" class="erster-schritt" aria-labelledby="erster-schritt-titel">
@@ -44,28 +49,14 @@
                         (click)="zumBeitragen()">Beitragen</button>
             </ng-container>
 
-            <!-- Wirkung zuerst: der Satz, darunter die Beitraege nach Nutzung; Punkte und Meilensteine danach (Nutzerfuehrung 13.11.) -->
-            <!-- Bei 0 Nutzungen sagt es die Box darunter; zweimal derselbe Satz wirkte doppelt (Persona-Runde 2, P52) -->
-            <p *ngIf="karten.length && !nochNichtGenutzt" class="album-statistik">{{ statistik }}</p>
-            <!-- Bei 0 Nutzungen: was „genutzt“ heisst und was als Naechstes hilft (UX-Review B11) -->
-            <p *ngIf="nochNichtGenutzt" class="hinweis-box nutzung-leer" data-testid="nutzung-leer">
-                Noch hat niemand deine Beiträge genutzt. Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.
-                Öffne einen Beitrag und teil seinen Link, dann findet er schneller seinen Weg.
-            </p>
-            <p *ngIf="karten.length && gesamtNutzung > 0" class="nutzung-erklaerung">Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.</p>
-
-            <app-kartenliste *ngIf="karten.length"
-                             variante="kompakt"
-                             [daten]="karten"
-                             (angetippt)="beitragOeffnen($event)">
-            </app-kartenliste>
+            <!-- Album nach Thema (Variante A, 20.11.): Deckel, Suche, Abschnitte -->
+            <app-album *ngIf="eintraege.length"
+                       [eintraege]="eintraege"
+                       [naechsterMeilenstein]="naechsterMeilenstein"
+                       (aendern)="aendern($event)"
+                       (loeschen)="loeschen($event)">
+            </app-album>
         </div>
-
-        <!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
-        <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords"
-            [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
-            (page)="onPageChange($event)">
-        </mat-paginator>
 
         <!-- Nur fuer die Person selbst; bei ausgeschalteten Punkten leer (#352) -->
         <app-punkte></app-punkte>

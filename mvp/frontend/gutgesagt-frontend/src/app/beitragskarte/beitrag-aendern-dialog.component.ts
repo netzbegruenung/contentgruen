@@ -10,7 +10,6 @@ import { finalize } from 'rxjs/operators';
 
 import { KartenDaten, KartenQuelle } from './karten-daten';
 import {
-  HINTERGRUNDINFO_TEXT_MAX,
   KOMMENTAR_TEXT_MAX,
   KURZFASSUNG_MAX,
   LANGFASSUNG_MAX,
@@ -22,15 +21,9 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
 import { BeitragAenderung, HerkunftEingabe, MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 
-/** Die Beitragstypen, die der Autor aendern kann (#299), mit der Grenze ihres Texts wie beim Anlegen. */
-export const AENDERBARE_TYPEN: Readonly<Record<string, number>> = {
-  commentary: KOMMENTAR_TEXT_MAX,
-  generictext: HINTERGRUNDINFO_TEXT_MAX,
-};
+import { AENDERBARE_TYPEN } from './aenderbar';
 
-export function istAenderbar(typ: string | null): boolean {
-  return typ !== null && typ in AENDERBARE_TYPEN;
-}
+export { AENDERBARE_TYPEN, istAenderbar } from './aenderbar';
 
 /** Was beim Speichern schiefging; 401 behandelt der Auth-Interceptor. */
 export function aendernFehlertext(fehler: { status?: number; error?: any } | undefined): string {

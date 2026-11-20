@@ -1,5 +1,3 @@
-import { KartenDaten } from '../beitragskarte/karten-daten';
-
 /** „einmal“ statt „1-mal“, sonst „3-mal“. */
 function mal(anzahl: number): string {
   return anzahl === 1 ? 'einmal' : `${anzahl}-mal`;
@@ -25,15 +23,4 @@ export function wirkungssatz(beitraege: number, genutzt: number, dieseWoche: num
     }
   }
   return `${subjekt} ${mal(genutzt)} genutzt${woche}.`;
-}
-
-/**
- * Die meistgenutzten zuerst, bei gleicher Nutzung die Reihenfolge des Servers (neueste
- * zuerst). Sortiert wird die geladene Seite; der Server liefert nach Datum.
- */
-export function nachNutzung(karten: KartenDaten[]): KartenDaten[] {
-  return karten
-    .map((karte, index) => ({ karte, index }))
-    .sort((a, b) => (b.karte.nutzung ?? 0) - (a.karte.nutzung ?? 0) || a.index - b.index)
-    .map(({ karte }) => karte);
 }

@@ -1,6 +1,7 @@
 import { ContentReference } from './commonDtos';
 import type { NutzungJeFassung } from '../../shared/fassung';
 import type { Stil, Zweck } from '../../shared/zweck-stil';
+import type { Thema } from './themenDtos';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -13,6 +14,16 @@ export interface GetContributionsOfUserResponse {
     results_count: number
     results: ContentResult[];
     total_records_count: number;
+}
+
+/**
+ * Worauf ein Beitrag in Meine Beitraege antwortet, mit den Themen dieser Aussage (Album
+ * nach Thema); dieselbe Wahl wie auf der Beitragsseite.
+ */
+export interface AussageImAlbum {
+    id: string;
+    text: string;
+    themen: Thema[];
 }
 
 export interface ContentResult {
@@ -54,6 +65,8 @@ export interface ContentResult {
     nutzung_je_fassung?: NutzungJeFassung | null;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
     references?: ContentReference[];
+    /** Nur in Meine Beitraege: die beantwortete Aussage mit Themen; null ohne sichtbare. */
+    aussage?: AussageImAlbum | null;
     /** Guete fuer das Siegel (#427): 1-10, null = "neu". */
     guete?: number | null;
     /** Die Kriterien des Gegenlesens, die der Beitrag erfuellt (nur die erfuellten). */

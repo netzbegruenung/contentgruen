@@ -2,7 +2,7 @@
     In der Vorschau: aria-disabled und tabIndex ueber die Inputs von MatButton setzen.
     Ein [attr.aria-disabled] am Knopf ueberschreibt MatButton mit seiner Host-Bindung.
 -->
-<div class="aktionen" [attr.aria-disabled]="vorschau || null">
+<div class="aktionen" *ngIf="!album" [attr.aria-disabled]="vorschau || null">
     <!-- Schlanke Material-Umriss-Daumen im Kreis-Knopf (#641, entschieden 10.11.): heben sich vom Siegel ab,
          der Daumen in der Sprechblase bleibt dem Siegel vorbehalten -->
     <div class="stimmen" *ngIf="abstimmenSichtbar">
@@ -94,6 +94,63 @@
                 (click)="beitragOeffnen()">
             <mat-icon>article</mat-icon>
             <span>Beitrag öffnen</span>
+        </button>
+    </mat-menu>
+</div>
+
+<!--
+    Eigenes Album (Meine Beitraege, Variante A 20.11.): links Aendern, in der Mitte Teilen als
+    Hauptknopf, im ⋮-Menue Kopieren, Oeffnen, Als Vorlage und Loeschen. Abstimmen und Melden
+    gibt es am eigenen Beitrag nicht.
+-->
+<div class="aktionen aktionen--album" *ngIf="album">
+    <div class="links">
+        <button mat-icon-button type="button" class="aendern-knopf" *ngIf="aenderbar"
+                [attr.aria-label]="aendernBeschriftung"
+                matTooltip="Ändern" matTooltipPosition="above"
+                (click)="aendern.emit()">
+            <mat-icon aria-hidden="true">edit</mat-icon>
+        </button>
+    </div>
+
+    <div class="kopieren">
+        <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf teilen-haupt"
+                [attr.aria-label]="teilenBeschriftung"
+                (click)="teilen()">
+            <mat-icon aria-hidden="true">share</mat-icon>
+            <span class="kopieren-wort">Teilen</span>
+        </button>
+    </div>
+
+    <div class="rechts">
+        <button mat-icon-button type="button" class="menue-knopf"
+                [matMenuTriggerFor]="albumMenue"
+                aria-label="Mehr Optionen"
+                matTooltip="Mehr Optionen" matTooltipPosition="above">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+    </div>
+
+    <mat-menu #albumMenue="matMenu">
+        <button mat-menu-item type="button" class="kopieren-eintrag" (click)="kopieren()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ kopierBeschriftung }}</span>
+        </button>
+        <button mat-menu-item type="button" class="zweite-kopie" *ngIf="zweiteKopie as zweite" (click)="zweiteKopieren()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ zweite.wort }}</span>
+        </button>
+        <button mat-menu-item type="button" class="beitrag-oeffnen" *ngIf="inhaltId" (click)="beitragOeffnen()">
+            <mat-icon>article</mat-icon>
+            <span>Beitrag öffnen</span>
+        </button>
+        <button mat-menu-item type="button" class="als-vorlage" *ngIf="kannAlsVorlage" (click)="alsVorlageNehmen()">
+            <mat-icon>call_split</mat-icon>
+            <span>Als Vorlage nehmen</span>
+        </button>
+        <button mat-menu-item type="button" class="loeschen-eintrag" (click)="loeschen.emit()">
+            <mat-icon>delete</mat-icon>
+            <span>Beitrag löschen</span>
         </button>
     </mat-menu>
 </div>

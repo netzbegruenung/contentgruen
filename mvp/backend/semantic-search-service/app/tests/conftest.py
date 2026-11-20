@@ -195,6 +195,27 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def nutzungsbedingungen_ohne_datenbank(monkeypatch):
+    """
+    Die gesperrten Endpunkte pruefen vor der Art.-9-Einwilligung die Zustimmung zu den
+    Nutzungsbedingungen (``require_art9_einwilligung``). Der Ersatz laesst jede Person
+    als zugestimmt durch, ohne PostgreSQL; Tests ohne Zustimmung setzen
+    ``nutzungsbedingungen_ohne_datenbank.lesen.return_value = None``.
+    """
+    import services.nutzungsbedingungen_service as modul
+    from domain.nutzungsbedingungen import AKTUELLER_STAND
+    from repositories.nutzungsbedingungen_repository import NbZustimmung
+
+    repository = MagicMock()
+    repository.lesen.return_value = NbZustimmung(
+        stand=AKTUELLER_STAND,
+        zugestimmt_am=datetime.datetime(2026, 11, 20, tzinfo=datetime.timezone.utc),
+    )
+    monkeypatch.setattr(modul, "_service", modul.NutzungsbedingungenService(repository))
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def punkte_einwilligung_ohne_datenbank(monkeypatch):
     """
     Punkte, Meilensteine und Muster-Hinweise pruefen die Einwilligung "Punkte und

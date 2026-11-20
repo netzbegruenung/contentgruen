@@ -186,6 +186,8 @@ STUFEN = {
 
 # Antworttext des Suchdienstes ohne Art.-9-Einwilligung (#489, dependencies.py).
 ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
+# Dasselbe ohne Zustimmung zu den Nutzungsbedingungen in der App (dependencies.py).
+NUTZUNGSBEDINGUNGEN_FEHLEN = "nutzungsbedingungen_fehlen"
 
 
 class ApiFehler(RuntimeError):
@@ -335,10 +337,14 @@ class BffFangkorb:
         try:
             antwort = self._post(pfad, daten)
         except ApiFehler as fehler:
-            if fehler.status == 403 and ART9_EINWILLIGUNG_FEHLT in str(fehler):
+            if fehler.status == 403 and (
+                ART9_EINWILLIGUNG_FEHLT in str(fehler)
+                or NUTZUNGSBEDINGUNGEN_FEHLEN in str(fehler)
+            ):
                 raise ApiFehler(
                     403,
-                    "Das Konto hat noch nicht in die Art.-9-Einwilligung eingewilligt: "
+                    "Das Konto hat den Nutzungsbedingungen noch nicht zugestimmt oder "
+                    "noch nicht in die Art.-9-Einwilligung eingewilligt: "
                     "einmal in der App anmelden und unter /einwilligung einwilligen "
                     "(docs/ART9_EINWILLIGUNG.md)",
                 ) from None

@@ -1,6 +1,6 @@
 @use '../shared/styles/breakpoints' as bp;
 
-// Eine Karte, vier Varianten. Modifier (.karte--voll/--kompakt/--einwurf/--kopf) regeln
+// Eine Karte, drei Varianten. Modifier (.karte--voll/--einwurf/--kopf) regeln
 // Masse und vorhandene Bereiche, die Typklasse setzt nur --karten-farbe.
 //
 // Keine feste Hoehe: im Karussell gleicht align-items: stretch die Reihe an, in
@@ -256,11 +256,6 @@ h4.karte-titel {
   font-size: 22px;
 }
 
-.badge-nutzung {
-  font-size: 14px;
-  font-weight: 700;
-}
-
 // Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst.
 // Lesbar gross und in Textfarbe, auch wenn die Meta-Zeile sonst klein und grau ist:
 // Sie ist die soziale Bestaetigung der Karte (Nutzerfuehrung 13.11.).
@@ -488,21 +483,12 @@ h4.karte-titel {
   color: var(--text-leise);
 }
 
+// Steht nur noch im Kopf der vollen Karte als kleine Zeile (Designrunde 17.11.,
+// Variante A); Farbe und Schrift setzt .karte-kopf .karte-angaben.
 .karte-eigene-leute {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 8px;
-  border-radius: var(--border-radius-large);
-  // Variante D (Tanne, #357): nur Farben aus der Palette, kein Gelb - Sonne ist
-  // fuer eine andere Markierung reserviert.
-  background: var(--primaer);
-  color: white;
-  font-weight: 600;
-
-  .angabe-icon {
-    color: white;
-  }
 }
 
 // Die ganze Karte traegt die Markierung als Rand links (Klasse aus kartenKlassen).
@@ -516,18 +502,16 @@ h4.karte-titel {
   font-size: 16px;
 }
 
-// Stil als Chip (#641): sichtbar als Angabe, nicht als graue Kursivschrift.
+// Stil (#641) als Angabe in der Kopfzeile; ein Knopf ohne eigenen Kasten.
 .karte-stil {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 1px 8px;
-  border: 1px solid var(--linie);
-  border-radius: var(--border-radius-large);
-  background: var(--primaer-tint);
-  color: var(--akzent-schrift);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
   font: inherit;
-  line-height: 1.5;
 }
 
 .karte-stil--knopf {
@@ -787,128 +771,6 @@ h4.karte-titel {
   }
 }
 
-// Kompakt (Album): hochkante Karte im Raster. Kopf mit Typfarbe nur fuer das Symbol,
-// darunter Titel und Anriss auf je zwei Zeilen, im Fuss Datum und Nutzung. Als Ganzes
-// antippbar, ohne Aktionsleiste.
-
-.karte--kompakt {
-  width: 100%;
-  min-height: 150px;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--akzent-tanne);
-    outline-offset: 2px;
-  }
-
-  .karte-kopf {
-    padding: var(--spacing-sm) 12px;
-  }
-
-  .karte-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 22px;
-  }
-
-  // Keine reservierten Zeilen: der Fuss sitzt per margin-top: auto am Kartenende.
-  .karte-titel {
-    -webkit-line-clamp: 2;
-    min-height: 0;
-    font-size: 15px;
-  }
-
-  .badge {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
-  }
-}
-
-// Album mit Bild: das Bild fuellt das Kopfband in unveraenderter Hoehe (Symbolbox 28 px
-// plus Innenabstand), das Typ-Symbol liegt klein unten links darauf.
-.karte-kopf--bild {
-  position: relative;
-  box-sizing: border-box;
-  min-height: calc(28px + 2 * var(--spacing-sm));
-  align-items: end;
-  overflow: hidden;
-
-  .karte-icon {
-    position: relative;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    background: var(--flaeche);
-    font-size: 13px;
-  }
-}
-
-.kopf-bild {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  // Der Platzhalter fuellt genau das Band, ohne eigene Mindesthoehe
-  --fremdes-bild-hoehe: 0;
-}
-
-.album-inhalt {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: 10px 12px 0;
-}
-
-.album-anriss {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-leise);
-  overflow-wrap: anywhere;
-}
-
-.album-fuss {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: auto;
-  padding: var(--spacing-sm) 12px;
-}
-
-.karte-datum {
-  font-size: 12px;
-  color: var(--text-leise);
-}
-
-// Die Nutzung zuerst und lesbar gross, der Zuwachs der Woche darunter (Nutzerfuehrung 13.11.).
-.album-nutzung {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-
-  .badge-nutzung {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-
-    // Ohne Nutzung lesbar, aber ruhig
-    &.ungenutzt {
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-leise);
-    }
-  }
-}
-
 // Der Zuwachs der Woche in der Akzentfarbe, damit er neben der Summe auffaellt.
 .nutzung-zuwachs {
   font-size: 13px;
@@ -937,14 +799,6 @@ h4.karte-titel {
     font-weight: 600;
     color: var(--text);
   }
-}
-
-// Ohne Nutzung dezent: kein Kreis, nur die graue Zahl.
-.badge-nutzung.ungenutzt {
-  background: none;
-  box-shadow: none;
-  font-weight: 400;
-  color: var(--text-leise);
 }
 
 // Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
@@ -1226,11 +1080,6 @@ h4.karte-titel {
   color: var(--akzent-schrift);
 
   .karte-eigene-leute {
-    padding: 0;
-    background: none;
-    color: inherit;
-    font-weight: inherit;
-
     .angabe-icon {
       color: inherit;
       width: 14px;
@@ -1245,10 +1094,6 @@ h4.karte-titel {
   }
 
   .karte-stil {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
     letter-spacing: inherit;
     text-transform: inherit;
     font-weight: inherit;
