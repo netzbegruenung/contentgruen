@@ -155,7 +155,12 @@ Deshalb in dieser Reihenfolge, nicht anders:
    Anmeldung über den eigenen Realm (#490); diese Fassung muss ausgerollt sein. Nach dem
    Umstellen den Satz „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und
    Zugang“ und den Einschub „(bis zur Umstellung vom Identitätsdienst der Netzbegrünung)“
-   unter „Anmeldung über die Netzbegrünung“ entfernen.
+   unter „Anmeldung über die Netzbegrünung“ entfernen. Im selben Rechtstext-PR, wenn die
+   Datei der Beta-Zugänge (`managed-users.json`) entfernt und `ENABLE_MANAGED_AUTH=false`
+   gesetzt ist: den Abschnitt „Zugang, den wir selbst anlegen“ streichen, samt Verweis
+   unter „Anmelde-Cookie“ und der Zeile „Beta-Zugänge“ in der Tabelle des Löschkonzepts.
+   Der Absatz „legen wir das Konto im Anmeldedienst vorab an“ stimmt nur, wenn der Lauf
+   unten mit `--konten-anlegen` lief; dann in die Vergangenheit setzen.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (unten,
    „Kennungen umstellen“).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im
