@@ -255,7 +255,8 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
         text:
           'Im Fangkorb liegen die Einwürfe aller. Destilliere einen zu einem Satz oder formuliere einen ' +
           'Satz zum Beitrag aus.',
-        ziel: '.fangkorb-block',
+        // Die Schritte Destillieren und Ausformulieren fuehren beide in den Fangkorb (20.11.)
+        ziel: '.destillieren-block',
         seite: { pfad: '/contribute' },
       },
       {

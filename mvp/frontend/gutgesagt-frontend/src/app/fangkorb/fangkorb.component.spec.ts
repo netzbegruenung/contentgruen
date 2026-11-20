@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -215,6 +215,46 @@ describe('FangkorbComponent', () => {
       expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
       expect(component.filter.nurMeine).toBeTrue();
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
+    });
+
+    /** Die Adresse, mit der der Fangkorb aufgeht (Schritte der Beitragen-Seite). */
+    function adresse(queryParams: Record<string, string>): void {
+      const route = TestBed.inject(ActivatedRoute);
+      route.snapshot = { queryParamMap: convertToParamMap(queryParams) } as ActivatedRouteSnapshot;
+    }
+
+    it('oeffnet den Tab aus der Adresse, merkt ihn und nimmt ihn aus der Adresse', () => {
+      adresse({ tab: 'ausformulieren' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Ausformulieren').getAttribute('aria-selected')).toBe('true');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
+      expect(JSON.parse(sessionStorage.getItem(FILTER_SCHLUESSEL)!).tab).toBe('ausformulieren');
+      expect(router.navigate).toHaveBeenCalledOnceWith([], jasmine.objectContaining({
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }));
+    });
+
+    it('geht mit ?tab=destillieren auch dann beim Destillieren auf, wenn die Sitzung anderes gemerkt hat', () => {
+      sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'ausformulieren' }));
+      adresse({ tab: 'destillieren' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('laesst Tab und Adresse ohne gueltigen Tab in der Adresse, wie sie sind', () => {
+      sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'ausformulieren' }));
+      adresse({ tab: 'toString' });
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Ausformulieren').getAttribute('aria-selected')).toBe('true');
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('haelt Tab und Filter in der Sitzung', () => {

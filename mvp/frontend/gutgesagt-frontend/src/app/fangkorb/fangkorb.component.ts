@@ -7,7 +7,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +32,8 @@ import {
   TABS,
   LEER_GEFISCHT,
   andererTab,
+  tabAus,
+  FANGKORB_TAB_PARAM,
   filterLaden,
   filterSpeichern,
   passtZumFilter,
@@ -128,9 +130,11 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     private einwurfAktionen: EinwurfAktionenService,
     private breakpoints: BreakpointObserver,
     private host: ElementRef<HTMLElement>,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.tabAusDerAdresse();
     this.breakpoints
       .observe(SEITENLEISTE_MEDIEN)
       .pipe(takeUntil(this.destroy$))
@@ -204,6 +208,25 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   }
 
   // Tabs
+
+  /**
+   * Ein Tab in der Adresse (``?tab=``, von den Schritten der Beitragen-Seite) gilt und wird
+   * gemerkt. Danach kommt er wieder heraus: Bliebe er stehen, oeffnete ein Neuladen nach
+   * einem Tabwechsel wieder den aus der Adresse (wie ``MEINE_TAB_PARAM``, #508).
+   */
+  private tabAusDerAdresse(): void {
+    const tab = tabAus(this.route.snapshot.queryParamMap.get(FANGKORB_TAB_PARAM));
+    if (!tab) {
+      return;
+    }
+    this.filterSetzen({ ...this.filter, tab });
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [FANGKORB_TAB_PARAM]: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
   tabWaehlen(tab: FangkorbTab): void {
     this.filterSetzen({ ...this.filter, tab });
