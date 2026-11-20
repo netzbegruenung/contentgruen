@@ -29,15 +29,17 @@ STAND_KENNUNG_MAX = 64
 STAENDE: Mapping[str, str] = MappingProxyType(
     {
         "2026-11-19": "19. November 2026",
+        "2026-11-20": "20. November 2026",
     }
 )
 
-AKTUELLER_STAND = "2026-11-19"
+AKTUELLER_STAND = "2026-11-20"
 
 # Staende, deren Zustimmung heute zaehlt. Eine reine Korrektur nimmt den neuen Stand
 # hinzu (keine neue Frage), ein wesentlicher Stand ersetzt die Menge (alle werden neu
 # gefragt), wie in docs/nutzungsbedingungen-staende/README.md.
-GELTENDE_STAENDE = frozenset({"2026-11-19"})
+# 2026-11-20 ist wesentlich (Zustimmung per Haekchen, NB Paragraf 2 und 10).
+GELTENDE_STAENDE = frozenset({"2026-11-20"})
 
 
 def bekannter_stand(kennung: str) -> bool:

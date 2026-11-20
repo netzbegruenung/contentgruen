@@ -239,14 +239,14 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
 - **Vision:** `docs/VISION.md`, Abschnitt mit „Meilensteine“ (Abzeichen nur mit Opt-in) und
   „Ranglisten“ (Zustimmung, Art. 9).
 - **Datenschutzerklärung:** `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`,
-  „Rückschlüsse auf deine politische Haltung“ → „Deine Einwilligung“ (Kennungsformat, Folgen,
+  „Rückschlüsse auf deine politische Haltung“ → „Deine Zustimmung und deine Einwilligung“ (Kennungsformat, Folgen,
   Widerruf) und „Punkte“ (Rechtsgrundlage, ohne Einwilligung keine Punkte); Spec
   `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.spec.ts`
   (`describe`-Blöcke „Rückschlüsse auf die politische Haltung“ und „Entdoppelte Nutzung, Punkte
   und Muster-Hinweise“).
 - **Lückenliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit
   #296) und `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md` (fasst „Deine
-  Einwilligung“ samt Widerrufsfolgen zusammen).
+  Einwilligung“, seit 0.9.8 „Deine Zustimmung und deine Einwilligung“, samt Widerrufsfolgen zusammen).
 
 - **Seite `/einwilligung`:** `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.html`
   zeigt den Wortlaut vom Backend, wiederholt aber in eigenen Sätzen, was ohne Einwilligung

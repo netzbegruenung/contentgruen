@@ -82,8 +82,10 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Betroffene:** Mitglieder der Netzbegrünung mit Netzbegrünung-Login, Personen mit Konto aus
   einer Einladung, Personen mit Beta-Zugang.
 - **Daten:** Kennung, Anzeigename (Vorname und Initial); Kennung, E-Mail-Adresse und Name im
-  verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse und
-  Passwort-Hash (DSE „Konto aus einer Einladung“); beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
+  verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse,
+  Vor- und Nachname und Passwort-Hash (DSE „Konto aus einer Einladung“); in der Plattform die
+  Zustimmung zu den Nutzungsbedingungen (Kennung, Zeitpunkt, Stand) und das Archiv der bis zur
+  Umstellung im Anmeldedienst gespeicherten Zustimmungszeitpunkte; beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
   Passworts in einer Konfigurationsdatei; Anmelde-Cookie; an Einladungen nur Zähler und Notiz.
   Im Browser bis zum Tabschluss, höchstens eine Stunde, ein angefangener Kommentar mit Prüfwert
   des Kontos (DSE „Weitere Einträge“, E1).

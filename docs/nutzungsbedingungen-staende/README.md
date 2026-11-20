@@ -3,13 +3,14 @@
 Die Nutzungsbedingungen (`nutzungsbedingungen.component.html`) tragen unten eine Stand-Zeile mit
 Tagesdatum. Dieses Datum ist der **Stand der Nutzungsbedingungen** (`GLOSSARY.md`): Es benennt
 genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie ihnen zugestimmt hat
-(NB §10, #466). Die Zustimmung kommt wie die erste über den CC0-Hinweis beim Absenden (NB §2,
-#415): Er verlinkt immer den aktuellen Stand, also stimmt jemand mit dem nächsten Absenden dem
-Stand zu, der dann live ist (seit #521). Daneben fragt vorerst die Keycloak-Pflichtaktion
-„Terms and Conditions“ beim Anmelden (#429; bleibt vorerst, Entscheidung Maintainer, 02.11.2026).
-§10 nennt sie nur als Möglichkeit („etwa bei der Anmeldung“) und stimmt deshalb mit und ohne
-sie. Fällt sie weg, entfallen die Schritte 5 und 6 unten
-(`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
+(NB §10, #466). Seit dem Stand vom 20. November 2026 kommt die Zustimmung mit einem eigenen
+Häkchen auf `/einwilligung`, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu
+(NB §2 und §10, #731); die App speichert sie mit dem Stand (Schritt 3). Bis dahin kam sie über
+den CC0-Hinweis beim Absenden (NB §2, #415, #521); der Hinweis verlinkt die Bedingungen weiter,
+das Absenden gibt aber nur noch den Text nach §4 frei. Daneben fragt vorerst noch die
+Keycloak-Pflichtaktion „Terms and Conditions“ beim Anmelden (#429), bis sie nach dem Archivieren
+der Zeitpunkte abgeschaltet wird (Folgeschritte in #731). Fällt sie weg, entfallen die Schritte
+5 und 6 unten (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
 Bei der Pflichtaktion speichert Keycloak nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
