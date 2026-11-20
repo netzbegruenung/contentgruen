@@ -144,8 +144,8 @@ gets a new `sub` there. Switch the BFF and enable redemption (`SEMANTIC_SEARCH_K
 together. Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
 
 The Beta-Zugänge (`managed-users.json`, Direktanmeldung) moved into the realm in the same run
-as the Kennungen (`--beta-zugaenge`, #488). Test and production run without the file and with
-`ENABLE_MANAGED_AUTH=false`; the Direktanmeldung stays for the dev stack only. Steps:
+as the Kennungen (`--beta-zugaenge`, #488). Test and production run without the file (and should
+set `ENABLE_MANAGED_AUTH=false`); the Direktanmeldung stays for the dev stack only. Steps:
 `docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“.
 
 ### ✉️ Mail (Meldungen)
