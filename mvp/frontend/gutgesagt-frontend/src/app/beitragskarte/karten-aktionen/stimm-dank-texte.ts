@@ -19,28 +19,35 @@
  */
 export const STIMMEN_AB = 3;
 
-/** So lange steht der Dank; der längere Satz unter der Schwelle braucht Lesezeit. */
-export const STIMM_DANK_MS = 8000;
+/** So lange steht der Dank. */
+export const STIMM_DANK_MS = 6000;
+
+/** Ein Dank: dekoratives Symbol (Screenreader lesen es nicht) und Text, getrennt. */
+export interface StimmDank {
+  icon: string;
+  text: string;
+}
 
 /** Unter der Schwelle: positiv, die Person ist unter den Ersten. */
-export const DANK_UNTER_DEN_ERSTEN =
-  `Danke! Du bist unter den Ersten, die diesen Beitrag bewerten. ` +
-  `Deine Stimme zählt in die Güte, sobald mindestens ${STIMMEN_AB} abgestimmt haben.`;
+export const DANK_UNTER_DEN_ERSTEN: StimmDank = {
+  icon: '🌱',
+  text: `Danke! Du bist unter den Ersten. Ab ${STIMMEN_AB} Stimmen zählt sie.`,
+};
 
 /** Ab der Schwelle: kurz. */
-export const DANK_ZAEHLT = 'Danke! Deine Stimme zählt in die Güte.';
+export const DANK_ZAEHLT: StimmDank = { icon: '👍', text: 'Danke! Deine Stimme zählt.' };
 
 /** Ohne Angabe zur Güte (etwa eine ältere Antwort): ohne Aussage über die Güte. */
-export const DANK_SCHLICHT = 'Danke für deine Stimme!';
+export const DANK_SCHLICHT: StimmDank = { icon: '👍', text: 'Danke für deine Stimme!' };
 
 /** Am eigenen Beitrag: Die eigene Stimme zählt nie in die Güte (guete_service.py). */
-export const DANK_EIGENER_BEITRAG = 'Gespeichert. Stimmen zum eigenen Beitrag zählen nicht in die Güte.';
+export const DANK_EIGENER_BEITRAG: StimmDank = { icon: '✔️', text: 'Gespeichert. Eigene Stimmen zählen nicht.' };
 
 /**
  * Der Dank zu einer gesetzten Stimme. ``stimmenZaehlen``: der Stand an der Karte vor der
  * Stimme, null = unbekannt. ``eigenerBeitrag``: die Person hat den Beitrag geschrieben.
  */
-export function stimmDank(stimmenZaehlen: boolean | null, eigenerBeitrag: boolean): string {
+export function stimmDank(stimmenZaehlen: boolean | null, eigenerBeitrag: boolean): StimmDank {
   if (eigenerBeitrag) {
     return DANK_EIGENER_BEITRAG;
   }

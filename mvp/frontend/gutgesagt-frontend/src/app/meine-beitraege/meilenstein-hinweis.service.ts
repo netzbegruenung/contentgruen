@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
 import { Observable, Subject, Subscription, of } from 'rxjs';
 import { debounceTime, map, switchMap } from 'rxjs/operators';
 
@@ -9,6 +9,7 @@ import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.se
 import { ROUTES } from '../shared/constants/app.constants';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 import { gesehenMerken, merkerEntfernen, merkerLesen } from './meilenstein-merker';
+import { IconSnackbarComponent } from '../shared/components/icon-snackbar/icon-snackbar.component';
 
 /** So lange steht der Hinweis, wenn niemand ihn wegtippt; wie die Rückmeldung (#349). */
 const ANZEIGEDAUER_MS = 8000;
@@ -46,7 +47,7 @@ export class MeilensteinHinweisService implements OnDestroy {
   private anstoesse = new Subject<void>();
   private abo: Subscription;
   /** Eine Bestätigung, die mit einem Meilenstein in eine Snackbar zusammengeht. */
-  private bestaetigung: { text: string; aktion: string; dauer: number } | null = null;
+  private bestaetigung: { text: string; aktion: string; dauer: number; icon?: string } | null = null;
 
   constructor(
     private usageTrackingService: UsageTrackingService,
@@ -66,10 +67,10 @@ export class MeilensteinHinweisService implements OnDestroy {
         this.bestaetigung = null;
         if (neu.length) {
           const meilenstein = meilensteinText(neu);
-          this.zeigen(bestaetigung ? `${bestaetigung.text} ${meilenstein}` : meilenstein);
+          this.zeigen(bestaetigung ? `${bestaetigung.text} ${meilenstein}` : meilenstein, bestaetigung?.icon);
           this.merken(neu);
         } else if (bestaetigung) {
-          this.snackBar.open(bestaetigung.text, bestaetigung.aktion, { duration: bestaetigung.dauer });
+          this.oeffnen(bestaetigung.text, bestaetigung.aktion, bestaetigung.dauer, bestaetigung.icon);
         }
       });
   }
@@ -134,21 +135,34 @@ export class MeilensteinHinweisService implements OnDestroy {
    * Eine Bestätigung zeigen; ist dabei ein Meilenstein neu, in derselben Snackbar,
    * damit der Hinweis die Bestätigung nicht verdrängt.
    */
-  bestaetigen(text: string, aktion = 'OK', dauer = 5000): void {
+  bestaetigen(text: string, aktion = 'OK', dauer = 5000, icon?: string): void {
     if (!this.merkerAktiv) {
-      this.snackBar.open(text, aktion, { duration: dauer });
+      this.oeffnen(text, aktion, dauer, icon);
       return;
     }
-    this.bestaetigung = { text, aktion, dauer };
+    this.bestaetigung = { text, aktion, dauer, icon };
     this.anstoesse.next();
   }
 
   /** Ein Hinweis mit „Ansehen“, das zu Meine Beiträge führt. */
-  zeigen(text: string): void {
-    this.snackBar
-      .open(text, 'Ansehen', { duration: ANZEIGEDAUER_MS })
+  zeigen(text: string, icon?: string): void {
+    this.oeffnen(text, 'Ansehen', ANZEIGEDAUER_MS, icon)
       .onAction()
       .subscribe(() => this.ansehen());
+  }
+
+  /**
+   * Die Snackbar; mit ``icon`` vorn ein dekoratives Symbol, das Screenreader nicht
+   * vorlesen (IconSnackbarComponent), sonst die einfache von Material.
+   */
+  private oeffnen(text: string, aktion: string, dauer: number, icon?: string): MatSnackBarRef<unknown> {
+    if (icon) {
+      return this.snackBar.openFromComponent(IconSnackbarComponent, {
+        data: { icon, text, aktion },
+        duration: dauer,
+      });
+    }
+    return this.snackBar.open(text, aktion, { duration: dauer });
   }
 
   ansehen(): void {

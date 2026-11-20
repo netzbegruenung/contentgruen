@@ -447,7 +447,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     const contentId = this.inhaltId;
     this.isVoting = true;
     // Stand vor der Stimme: Er entscheidet, ob die Person unter den Ersten ist.
-    const dank = ziel === null ? '' : stimmDank(this.stimmenZaehlen, !this.eigeneStimmeImZaehler);
+    const dank = ziel === null ? null : stimmDank(this.stimmenZaehlen, !this.eigeneStimmeImZaehler);
 
     const anfrage =
       ziel === 'like'
@@ -470,7 +470,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
           // eingeblendet, per aria-live angesagt, ohne die Karte zu verschieben. Ist dabei
           // ein Meilenstein wie „Erste 10 Bewertungen“ neu, steht er in derselben Snackbar.
           // Den Dienst erst hier holen: Karten ohne Abstimmen brauchen ihn nicht.
-          this.injector.get(MeilensteinHinweisService).bestaetigen(dank, 'Schließen', STIMM_DANK_MS);
+          this.injector.get(MeilensteinHinweisService).bestaetigen(dank.text, 'Schließen', STIMM_DANK_MS, dank.icon);
         }
         gemeldet.emit(contentId);
         this.cdr.markForCheck();

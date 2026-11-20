@@ -106,8 +106,12 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       liked();
       fixture.detectChanges();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN, 'Schließen', STIMM_DANK_MS);
-      expect(DANK_UNTER_DEN_ERSTEN).toContain('mindestens 3');
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN.text, 'Schließen', STIMM_DANK_MS, DANK_UNTER_DEN_ERSTEN.icon);
+      // Wortlaut freigegeben 20.11.2026; das Symbol steht getrennt, damit es nicht vorgelesen wird.
+      expect(DANK_UNTER_DEN_ERSTEN).toEqual({ icon: '🌱', text: 'Danke! Du bist unter den Ersten. Ab 3 Stimmen zählt sie.' });
+      expect(DANK_ZAEHLT).toEqual({ icon: '👍', text: 'Danke! Deine Stimme zählt.' });
+      expect(DANK_SCHLICHT).toEqual({ icon: '👍', text: 'Danke für deine Stimme!' });
+      expect(DANK_EIGENER_BEITRAG).toEqual({ icon: '✔️', text: 'Gespeichert. Eigene Stimmen zählen nicht.' });
       expect(fixture.nativeElement.querySelector('.stimm-dank')).toBeNull();
       expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Danke');
       // Kein zweiter Weg daneben: nur die eine Snackbar ueber den Meilenstein-Dienst.
@@ -121,13 +125,13 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.toggleDislike();
       tick(50);
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT, 'Schließen', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT.text, 'Schließen', STIMM_DANK_MS, DANK_ZAEHLT.icon);
     }));
 
     it('dankt ohne Angabe zur Guete schlicht', fakeAsync(() => {
       liked();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT, 'Schließen', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT.text, 'Schließen', STIMM_DANK_MS, DANK_SCHLICHT.icon);
     }));
 
     it('sagt am eigenen Beitrag, dass die Stimme nicht in die Guete zaehlt', fakeAsync(() => {
@@ -136,7 +140,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       liked();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG, 'Schließen', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG.text, 'Schließen', STIMM_DANK_MS, DANK_EIGENER_BEITRAG.icon);
     }));
 
     it('dankt beim Zuruecknehmen nicht', fakeAsync(() => {

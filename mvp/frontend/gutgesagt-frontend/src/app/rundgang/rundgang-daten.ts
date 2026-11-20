@@ -218,7 +218,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
         titel: 'Abstimmen',
         text:
           'War der Kommentar hilfreich? Angemeldet zeigt deine Stimme anderen, welche Kommentare gut ' +
-          'ankommen. Nach deiner Stimme siehst du kurz unten, ob du unter den Ersten bist und wann sie in die Güte zählt.',
+          'ankommen. Nach deiner Stimme siehst du kurz unten, ob du unter den Ersten bist.',
         ziel: 'app-beitragskarte .stimmen',
         seite: { pfad: '/result', query: { searchQuery: STARTBEISPIEL } },
       },

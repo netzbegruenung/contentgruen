@@ -8,6 +8,7 @@ import { MeilensteinHinweisService, SAMMELN_MS } from './meilenstein-hinweis.ser
 import { MEILENSTEINE_GESEHEN_SCHLUESSEL, merkerEntfernen } from './meilenstein-merker';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
+import { IconSnackbarComponent } from '../shared/components/icon-snackbar/icon-snackbar.component';
 
 describe('MeilensteinHinweisService (#351)', () => {
   const SCHLUESSEL = MEILENSTEINE_GESEHEN_SCHLUESSEL;
@@ -25,8 +26,9 @@ describe('MeilensteinHinweisService (#351)', () => {
 
   function dienst(): MeilensteinHinweisService {
     aktion = new Subject<void>();
-    snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
+    snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open', 'openFromComponent']);
     snackBar.open.and.returnValue({ onAction: () => aktion.asObservable() } as never);
+    snackBar.openFromComponent.and.returnValue({ onAction: () => aktion.asObservable() } as never);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     laden = jasmine.createSpy('getEigeneMeilensteine').and.callFake(() => of(meilensteine));
     TestBed.configureTestingModule({
@@ -203,6 +205,37 @@ describe('MeilensteinHinweisService (#351)', () => {
     tick(SAMMELN_MS);
 
     expect(snackBar.open).toHaveBeenCalledOnceWith('Der Einwurf ist verknüpft.', 'OK', { duration: 5000 });
+  }));
+
+  it('zeigt eine Bestätigung mit Symbol in der Snackbar mit Symbol, das Symbol getrennt vom Text', fakeAsync(() => {
+    meilensteine = [];
+    const hinweis = dienst();
+
+    hinweis.bestaetigen('Danke! Deine Stimme zählt.', 'Schließen', 6000, '👍');
+    tick(SAMMELN_MS);
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(snackBar.openFromComponent).toHaveBeenCalledOnceWith(IconSnackbarComponent, {
+      data: { icon: '👍', text: 'Danke! Deine Stimme zählt.', aktion: 'Schließen' },
+      duration: 6000,
+    });
+  }));
+
+  it('behält das Symbol, wenn ein Meilenstein dazukommt', fakeAsync(() => {
+    meilensteine = [meilenstein('bewertungen-10', true, 'Erste 10 Bewertungen')];
+    const hinweis = dienst();
+
+    hinweis.bestaetigen('Danke! Deine Stimme zählt.', 'Schließen', 6000, '👍');
+    tick(SAMMELN_MS);
+
+    expect(snackBar.openFromComponent).toHaveBeenCalledOnceWith(IconSnackbarComponent, {
+      data: {
+        icon: '👍',
+        text: 'Danke! Deine Stimme zählt. Meilenstein erreicht: Erste 10 Bewertungen',
+        aktion: 'Ansehen',
+      },
+      duration: jasmine.any(Number),
+    });
   }));
 
   it('führt mit "Ansehen" zu Meine Beiträge', fakeAsync(() => {
