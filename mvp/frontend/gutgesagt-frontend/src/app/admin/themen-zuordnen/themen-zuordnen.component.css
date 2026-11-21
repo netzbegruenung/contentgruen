@@ -1,6 +1,10 @@
+/* Bündig mit den anderen Admin-Seiten: kein eigener Innenabstand (vorher 24 px eingerückt) */
 .themen-zuordnen {
-  padding: var(--spacing-lg);
   max-width: 900px;
+}
+
+.themen-zuordnen h2 {
+  margin: 0 0 8px;
 }
 
 .hinweis,
@@ -21,20 +25,29 @@
   color: var(--fehler);
 }
 
+/* Die Aussagen als eine Karte mit Trennlinien, wie die Listen der übrigen App */
 .aussagen {
   list-style: none;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  background: var(--flaeche);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--admin-karte-schatten);
 }
 
 .aussage {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--mulde);
+  padding: 12px var(--spacing-md);
+  border-bottom: 1px solid var(--linie);
+}
+
+.aussage:last-child {
+  border-bottom: none;
 }
 
 .aussage-text {
   margin: 0 0 8px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .nicht-im-testset {

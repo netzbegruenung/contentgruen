@@ -7,7 +7,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-md);
 }
 
 /* Titel wie die Seitentitel (globales h2: GrueneType in Tanne), #512 */
@@ -21,7 +21,7 @@
  * erkennbar bleibt, wo einer endet.
  */
 .filter-section {
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-sm);
   display: flex;
   justify-content: flex-start;
 }
@@ -42,8 +42,31 @@
   overflow: visible;
 }
 
+/* Gewaehlt wie in der Admin-Navigation: Tanne-Hauch, Tanne-Text, Rand in Tanne */
 .filter-section mat-button-toggle.mat-button-toggle-checked {
   border-color: var(--akzent-tanne);
+  background-color: var(--primaer-tint);
+  color: var(--akzent-schrift);
+  font-weight: 700;
+}
+
+/*
+ * Am Handy ohne Symbole und mit knappem Innenabstand: acht Umschalter in drei statt vier
+ * Zeilen (21.11.); die Hoehe bleibt bei 44 px (Touch-Ziel).
+ */
+@media (max-width: 599px) {
+  .filter-section mat-button-toggle-group.mat-button-toggle-group {
+    gap: 6px;
+  }
+
+  .filter-section mat-button-toggle mat-icon {
+    display: none;
+  }
+
+  .filter-section ::ng-deep .mat-button-toggle-label-content {
+    padding: 0 10px;
+    line-height: 42px;
+  }
 }
 
 /* Die rote Zahl steht neben dem Wort, nicht darauf (M2): Platz fuer das Abzeichen */
@@ -130,10 +153,11 @@ tr.erledigt td {
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 2px 10px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -160,16 +184,19 @@ tr.erledigt td {
 .gesperrte-liste {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .gesperrter-beitrag {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: var(--spacing-md);
   background: var(--flaeche);
-  border-radius: 4px;
+}
+
+.gesperrter-beitrag .content-type-badge {
+  align-self: flex-start;
 }
 
 .gesperrter-text {
@@ -245,21 +272,39 @@ tr.erledigt td {
   color: var(--text-leise);
 }
 
+/* Tabelle als eine Karte: rund, leichter Schatten, Kopf im Klee-zart wie die Kartenkoepfe */
 .reports-table {
   overflow-x: auto;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--admin-karte-schatten);
 }
 
 table {
   width: 100%;
 }
 
+.reports-table table.mat-elevation-z2 {
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+.reports-table th.mat-mdc-header-cell {
+  background: var(--karte-kommentar);
+  color: var(--akzent-schrift);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Beitragstyp als Marke im Klee-zart der Kartenkoepfe statt Material-Blau */
 .content-type-badge {
-  background-color: var(--info-tint);
-  color: var(--info-rand);
-  padding: 4px 12px;
+  display: inline-block;
+  background-color: var(--karte-kommentar);
+  color: var(--akzent-schrift);
+  padding: 2px 10px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .reason-cell strong {
@@ -344,8 +389,11 @@ table {
 }
 
 .content-display {
+  margin: 0 0 var(--spacing-sm);
+  padding: var(--spacing-md);
   background-color: var(--mulde);
-  border-left: 3px solid var(--info-rand);
+  border-left: 3px solid var(--linie-tanne);
+  border-radius: 0 var(--border-radius-medium) var(--border-radius-medium) 0;
 }
 
 .content-display h3 {
@@ -357,8 +405,8 @@ table {
 .content-info {
   margin-bottom: 12px;
   padding: 8px 12px;
-  background-color: var(--info-tint);
-  border-radius: 4px;
+  background-color: var(--flaeche);
+  border-radius: var(--border-radius-medium);
 }
 
 .content-id {
@@ -372,13 +420,13 @@ table {
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: var(--info-rand);
+  color: var(--text);
 }
 
 .content-wrapper {
   background-color: var(--flaeche);
   padding: 16px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-medium);
 }
 
 .content-item p {
@@ -387,7 +435,7 @@ table {
 }
 
 .content-item strong {
-  color: var(--info-rand);
+  color: var(--akzent-schrift);
   margin-right: 8px;
 }
 
@@ -395,7 +443,7 @@ table {
   margin: 16px 0;
   padding: 12px;
   background-color: var(--mulde);
-  border-radius: 4px;
+  border-radius: var(--border-radius-medium);
   border-left: 3px solid var(--linie);
 }
 
@@ -503,15 +551,131 @@ table {
     display: none;
   }
 
+  /* Jede Meldung eine Karte; die Tabelle selbst ohne Rahmen und Grund */
+  .reports-table {
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .reports-table table.mat-mdc-table {
+    background: transparent;
+  }
+
+  /*
+   * Kopf der Karte: Typ und Datum links, Aufklappen rechts; darunter Grund, Melder,
+   * Status und Aktionen. Die Zellen tragen die Spaltenklassen von mat-table.
+   */
   .reports-table tr.report-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'typ datum aufklappen'
+      'grund grund grund'
+      'melder melder melder'
+      'status status status'
+      'bearbeitet bearbeitet bearbeitet'
+      'aktionen aktionen aktionen';
+    align-items: center;
     height: auto;
-    padding: 8px 0;
-    border-top: 1px solid var(--linie);
+    margin-top: 12px;
+    padding: 0 0 12px;
+    overflow: hidden;
+    background: var(--flaeche);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--admin-karte-schatten);
   }
 
   .reports-table td.mat-mdc-cell {
     border-bottom: none;
-    padding: 4px 12px;
+    padding: 4px var(--spacing-md);
+  }
+
+  .reports-table td.mat-column-content_type,
+  .reports-table td.mat-column-created,
+  .reports-table td.mat-column-expand {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    background: var(--karte-kommentar);
+  }
+
+  .reports-table td.mat-column-content_type {
+    grid-area: typ;
+    padding-right: var(--spacing-sm);
+  }
+
+  /* Im Band die Marke auf der Kartenflaeche, sonst verschwindet sie im gleichen Klee-zart */
+  .reports-table td.mat-column-content_type .content-type-badge {
+    background-color: var(--flaeche);
+  }
+
+  .reports-table td.mat-column-created {
+    grid-area: datum;
+    gap: 0.35em;
+    padding-left: 0;
+    color: var(--text-leise);
+    font-size: 14px;
+  }
+
+  .reports-table td.mat-column-expand {
+    grid-area: aufklappen;
+    justify-content: flex-end;
+    padding: 0 var(--spacing-xs) 0 0;
+  }
+
+  .reports-table td.mat-column-expand button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .reports-table td.mat-column-reason {
+    grid-area: grund;
+    padding-top: 12px;
+  }
+
+  .reports-table td.mat-column-reporter {
+    grid-area: melder;
+  }
+
+  .reports-table td.mat-column-status {
+    grid-area: status;
+  }
+
+  .reports-table td.mat-column-reviewed_by {
+    grid-area: bearbeitet;
+  }
+
+  .reports-table td.mat-column-actions {
+    grid-area: aktionen;
+    padding-top: var(--spacing-sm);
+  }
+
+  /* Typ und Datum erklaeren sich im Kartenkopf selbst */
+  .reports-table td.mat-column-content_type::before,
+  .reports-table td.mat-column-created::before {
+    display: none !important;
+  }
+
+  .reports-table tr.erledigt td.mat-column-content_type,
+  .reports-table tr.erledigt td.mat-column-created,
+  .reports-table tr.erledigt td.mat-column-expand {
+    background: var(--mulde);
+  }
+
+  .reports-table tr.report-row:hover {
+    background-color: var(--flaeche);
+  }
+
+  .reports-table tr.erledigt {
+    background-color: var(--mulde);
+  }
+
+  .reports-table .reason-cell .description {
+    white-space: normal;
+    max-width: none;
   }
 
   .reports-table td[data-label]::before {
@@ -532,6 +696,11 @@ table {
   /* Die eingeklappte Detailzeile nimmt keinen Platz */
   .reports-table tr.expanded-row td.mat-mdc-cell {
     padding: 0;
+  }
+
+  .reports-table .content-display {
+    margin: var(--spacing-sm) 0 0;
+    border-radius: var(--border-radius-medium);
   }
 
   .gesperrter-beitrag {

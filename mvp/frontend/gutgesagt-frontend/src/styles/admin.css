@@ -1,0 +1,99 @@
+/*
+ * Admin-Bereich im Look der übrigen App (Sebastian 21.11.: „Die Adminseiten sind hässlich.“).
+ * Vorbild sind die Beitragskarten der Startseite: runde Karten (16 px) mit leichtem Schatten,
+ * oben ein Band in Klee-zart (--karte-kommentar), der Titel darin fett in der Grundschrift.
+ * Seitentitel bleiben GrueneType (globales h2). Gilt nur unter app-admin-layout, damit die
+ * Material-Karten und -Erhebungen anderswo unverändert bleiben. Im Dunkeln tragen die Tokens
+ * (custom-theme.scss) die Werte; der Schatten kommt dort aus --elevation-2.
+ */
+
+app-admin-layout {
+  --admin-karte-schatten: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme='dark'] app-admin-layout {
+  --admin-karte-schatten: var(--elevation-2);
+}
+
+/* Karten der Übersicht (Bilanz, Suchen ohne Treffer, Muster-Hinweise, Feedback, Einladungen) */
+app-admin-layout .mat-mdc-card {
+  overflow: hidden;
+  background: var(--flaeche);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--admin-karte-schatten);
+}
+
+app-admin-layout .mat-mdc-card-header {
+  display: block;
+  padding: var(--spacing-md);
+  background: var(--karte-kommentar);
+}
+
+app-admin-layout .mat-mdc-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+  color: var(--akzent-schrift);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+app-admin-layout .mat-mdc-card-title mat-icon {
+  flex-shrink: 0;
+  color: var(--akzent-schrift);
+}
+
+/* Untertitel als ruhiger Begleittext, nicht fett (Material setzt sie wie eine Überschrift) */
+app-admin-layout .mat-mdc-card-subtitle {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--text-leise);
+  font-family: PTSans, Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+app-admin-layout .mat-mdc-card-content:last-child {
+  padding: var(--spacing-md);
+}
+
+/* Tabellen in den Karten: Kopf klein und leise, Zahlen bündig */
+app-admin-layout .mat-mdc-card-content thead th {
+  color: var(--text-leise);
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: bottom;
+}
+
+app-admin-layout .mat-mdc-card-content table td {
+  font-variant-numeric: tabular-nums;
+}
+
+app-admin-layout .mat-mdc-card-content tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+/* Listen-Karten (Gesperrt, Suchanfragen, Löschaufträge, Nach Person, Schalter) wie die Beitragskarten */
+app-admin-layout .mat-elevation-z1,
+app-admin-layout .mat-elevation-z2 {
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--admin-karte-schatten);
+}
+
+html[data-theme='dark'] app-admin-layout .mat-elevation-z1,
+html[data-theme='dark'] app-admin-layout .mat-elevation-z2 {
+  box-shadow: var(--admin-karte-schatten) !important;
+}
+
+/* Umschalter (Feedback offen/erledigt, Moderation): gewählt wie in der Navigation, Tanne-Hauch */
+app-admin-layout {
+  --mat-button-toggle-selected-state-background-color: var(--primaer-tint);
+  --mat-button-toggle-selected-state-text-color: var(--akzent-schrift);
+}
+
+app-admin-layout .mat-button-toggle-checked {
+  font-weight: 700;
+}

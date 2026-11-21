@@ -57,8 +57,8 @@ describe('MvpDashboardComponent', () => {
       'So wird gezählt: Aktive Personen pro Tag',
       'So wird gezählt: Suchen pro Person',
       'So wird gezählt: Neue Inhalte diese Woche',
-      'So wird gezählt: Nutzungen im Verlauf',
       'So wird gezählt: Anteil „War hilfreich“',
+      'So wird gezählt: Nutzungen im Verlauf',
     ]);
     expect(knoepfe.every((knopf) => knopf.type === 'button')).toBeTrue();
   });

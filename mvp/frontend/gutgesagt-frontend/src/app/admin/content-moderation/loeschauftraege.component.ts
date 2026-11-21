@@ -100,7 +100,7 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
     .hinweis { margin: 0 0 16px; }
     .laedt { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
     .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-leise); }
-    .auftrag { padding: 12px; margin-bottom: 8px; display: grid; gap: 4px; overflow-wrap: anywhere;
+    .auftrag { padding: 12px 16px; margin-bottom: 12px; display: grid; background: var(--flaeche); gap: 4px; overflow-wrap: anywhere;
                border-left: 4px solid transparent; }
     .auftrag button { justify-self: start; margin-top: 4px; }
     .auftrag.ueberfaellig { border-left-color: var(--fehler); }

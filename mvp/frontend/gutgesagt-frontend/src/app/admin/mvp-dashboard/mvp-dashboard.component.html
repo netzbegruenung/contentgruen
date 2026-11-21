@@ -78,8 +78,33 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- 4. Nutzungen im Verlauf -->
+    <!-- 4. Helpful Rate -->
     <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>thumb_up</mat-icon>
+          Anteil „War hilfreich“
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp5="matTooltip"
+                  matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."
+                  matTooltipPosition="right" (click)="tipp5.toggle()" aria-label="So wird gezählt: Anteil „War hilfreich“">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">
+          <span class="current">{{ metrics.helpful_rate | number:'1.0-0':'de' }}%</span>
+        </div>
+        <div class="vote-details">
+          <span class="likes">👍 {{ metrics.helpful_like_count }}</span>
+          <span class="dislikes">👎 {{ metrics.helpful_dislike_count }}</span>
+          <span class="total">({{ metrics.helpful_total_votes }} Gesamt)</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    <!-- 5. Nutzungen im Verlauf: zuletzt und ueber die volle Breite (Kachelraster 21.11.) -->
+    <mat-card class="metric-card metric-breit">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>timeline</mat-icon>
@@ -110,32 +135,6 @@
         <div class="trend" [style.color]="getTrendColor(metrics.usage_counter_trend)">
           <mat-icon>{{ getTrendIcon(metrics.usage_counter_trend) }}</mat-icon>
           <span class="trend-text">{{ trendWort(metrics.usage_counter_trend) }}</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- 5. Helpful Rate -->
-    <mat-card class="metric-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>thumb_up</mat-icon>
-          Anteil „War hilfreich“
-          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
-          <button type="button" class="info-icon" #tipp5="matTooltip"
-                  matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."
-                  matTooltipPosition="right" (click)="tipp5.toggle()" aria-label="So wird gezählt: Anteil „War hilfreich“">
-            <mat-icon aria-hidden="true">info_outline</mat-icon>
-          </button>
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="metric-value">
-          <span class="current">{{ metrics.helpful_rate | number:'1.0-0':'de' }}%</span>
-        </div>
-        <div class="vote-details">
-          <span class="likes">👍 {{ metrics.helpful_like_count }}</span>
-          <span class="dislikes">👎 {{ metrics.helpful_dislike_count }}</span>
-          <span class="total">({{ metrics.helpful_total_votes }} Gesamt)</span>
         </div>
       </mat-card-content>
     </mat-card>

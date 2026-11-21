@@ -29,6 +29,18 @@ tbody th {
   white-space: nowrap;
 }
 
+/* Am Handy rollt die Tabelle seitlich: die Woche bleibt links stehen */
+th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--flaeche);
+}
+
+thead th {
+  min-width: 6.5em;
+}
+
 .zahl {
   text-align: right;
 }

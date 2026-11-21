@@ -77,16 +77,24 @@ const TITEL: Record<string, string> = {
     .hinweis { margin: 0 0 16px; }
     .laedt { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
     .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-leise); }
-    .schalter { padding: 12px 16px; margin-bottom: 12px; overflow-wrap: anywhere; }
-    .schalter p { margin: 4px 0; }
-    .kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .kopf h3 { margin: 0; font-size: 1.0625rem; }
+    /* Karte wie die Beitragskarten: Kopf als Band in Klee-zart, Titel fett (Admin-Design 21.11.) */
+    .schalter { overflow: hidden; padding: 0 0 12px; margin-bottom: 12px; overflow-wrap: anywhere; background: var(--flaeche); }
+    .schalter p { margin: 4px 16px; }
+    .kopf {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      min-height: 48px; margin-bottom: 8px; padding: 4px 8px 4px 16px; background: var(--karte-kommentar);
+    }
+    .kopf h3 { margin: 0; font-family: inherit; font-size: 17px; font-weight: 700; color: var(--akzent-schrift); }
     .zustand { font-weight: 500; color: var(--text-leise); }
     .zustand.wirkt { color: inherit; }
     .obergrenze, .dsfa { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .obergrenze code { font-size: 0.8125rem; color: var(--text-leise); }
     .obergrenze.aus, .gesperrt { color: var(--text-leise); }
-    .dsfa { font-size: 0.875rem; }
+    .dsfa {
+      align-items: flex-start; flex-wrap: nowrap; margin-top: 8px !important; padding: 8px 12px;
+      font-size: 0.875rem; background: var(--hinweis-tint); color: var(--text); border-radius: var(--border-radius-medium);
+    }
+    .dsfa mat-icon { flex-shrink: 0; font-size: 20px; width: 20px; height: 20px; color: var(--hinweis-text); }
   `],
 })
 export class SchalterComponent implements OnInit {

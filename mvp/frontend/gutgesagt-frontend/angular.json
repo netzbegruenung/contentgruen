@@ -35,7 +35,8 @@
               "src/styles/fonts.css",
               "src/theme/custom-theme.scss",
               "src/styles.css",
-              "src/styles/mobile-common.css"
+              "src/styles/mobile-common.css",
+              "src/styles/admin.css"
             ],
             "scripts": []
           },
@@ -110,7 +111,8 @@
               "src/styles/fonts.css",
               "src/theme/custom-theme.scss",
               "src/styles.css",
-              "src/styles/mobile-common.css"
+              "src/styles/mobile-common.css",
+              "src/styles/admin.css"
             ],
             "scripts": []
           }

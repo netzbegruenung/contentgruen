@@ -116,7 +116,7 @@ export const FREIGEBEN_FRAGE: BestaetigungsDialogDaten = {
       .abgelaufen { margin: 0 0 16px; font-weight: 700; }
       .loading, .error, .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 0; }
       .suchanfragen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-      .suchanfrage { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 16px; border-radius: 4px; }
+      .suchanfrage { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 16px; border-radius: var(--border-radius-large); background: var(--flaeche); }
       .suchanfrage-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
       .personen { opacity: 0.8; }
       .suchanfrage-aktionen { display: flex; gap: 4px; align-items: center; }

@@ -111,7 +111,7 @@ function loeschenFrage(nurName: boolean, anzahl: number): BestaetigungsDialogDat
     .melder-suche { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; }
     .melder-suche .hinweis { flex-basis: 100%; margin: 0; }
     .treffer-kopf { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px; }
-    .treffer { padding: 12px; margin-bottom: 8px; display: grid; gap: 4px; overflow-wrap: anywhere; }
+    .treffer { padding: 12px 16px; margin-bottom: 12px; background: var(--flaeche); display: grid; gap: 4px; overflow-wrap: anywhere; }
     .error { color: var(--fehler); }
   `],
 })
