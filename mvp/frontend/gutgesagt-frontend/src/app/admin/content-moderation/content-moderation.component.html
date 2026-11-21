@@ -383,7 +383,7 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="report-row" [class.erledigt]="istErledigt(row)" (click)="toggleExpand(row)"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="report-row" [class.erledigt]="istErledigt(row)" [class.offen]="isExpanded(row)" (click)="toggleExpand(row)"></tr>
       <tr mat-row *matRowDef="let row; columns: ['expandedContent']" class="expanded-row"></tr>
     </table>
   </div>

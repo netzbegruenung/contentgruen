@@ -612,9 +612,16 @@ table {
     background-color: var(--flaeche);
   }
 
+  /* Tag und Uhrzeit je ohne Umbruch; bei 320 px rutscht die Uhrzeit unter den Tag */
+  .reports-table .datum-teil {
+    white-space: nowrap;
+  }
+
   .reports-table td.mat-column-created {
     grid-area: datum;
-    gap: 0.35em;
+    flex-wrap: wrap;
+    column-gap: 0.35em;
+    row-gap: 0;
     padding-left: 0;
     color: var(--text-leise);
     font-size: 14px;
@@ -653,24 +660,25 @@ table {
     padding-top: var(--spacing-sm);
   }
 
-  /* Typ und Datum erklaeren sich im Kartenkopf selbst */
-  .reports-table td.mat-column-content_type::before,
-  .reports-table td.mat-column-created::before {
-    display: none !important;
-  }
-
   .reports-table tr.erledigt td.mat-column-content_type,
   .reports-table tr.erledigt td.mat-column-created,
   .reports-table tr.erledigt td.mat-column-expand {
     background: var(--mulde);
   }
 
+  /* Kein Hover-Grau am Handy: es bliebe nach dem Antippen haengen; erledigt bleibt Mulde */
   .reports-table tr.report-row:hover {
     background-color: var(--flaeche);
   }
 
-  .reports-table tr.erledigt {
+  .reports-table tr.erledigt,
+  .reports-table tr.erledigt:hover {
     background-color: var(--mulde);
+  }
+
+  /* Lange Woerter (Links, Kennungen) brechen um statt abgeschnitten zu werden */
+  .reports-table td.mat-mdc-cell {
+    overflow-wrap: anywhere;
   }
 
   .reports-table .reason-cell .description {
@@ -683,6 +691,17 @@ table {
     display: block;
     font-size: 0.75rem;
     color: var(--text-leise);
+  }
+
+  /* Typ und Datum erklaeren sich im Kartenkopf selbst: Beschriftung nur fuer Screenreader */
+  .reports-table td.mat-column-content_type::before,
+  .reports-table td.mat-column-created::before {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .reports-table .action-buttons {
@@ -698,9 +717,23 @@ table {
     padding: 0;
   }
 
-  .reports-table .content-display {
-    margin: var(--spacing-sm) 0 0;
-    border-radius: var(--border-radius-medium);
+  /* Aufgeklappt: Karte und Detail sind eine Einheit, das Detail haengt unten an der Karte */
+  .reports-table tr.report-row.offen {
+    border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+  }
+
+  /* Die Animation setzt 16 px Innenabstand inline; am Handy traegt das Detail selbst den Abstand */
+  .reports-table .content-preview {
+    padding: 0 !important;
+  }
+
+  .reports-table .content-display,
+  .reports-table .content-not-found {
+    margin: 0;
+    border-left: none;
+    border-top: 3px solid var(--linie-tanne);
+    border-radius: 0 0 var(--border-radius-large) var(--border-radius-large);
+    box-shadow: var(--admin-karte-schatten);
   }
 
   .gesperrter-beitrag {

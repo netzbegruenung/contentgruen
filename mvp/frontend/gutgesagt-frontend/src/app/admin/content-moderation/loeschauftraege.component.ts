@@ -104,6 +104,8 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
                border-left: 4px solid transparent; }
     .auftrag button { justify-self: start; margin-top: 4px; }
     .auftrag.ueberfaellig { border-left-color: var(--fehler); }
+    /* Links eckig: sonst biegt sich der Randstrich mit der runden Karte */
+    .auftrag { border-radius: 0 var(--border-radius-large) var(--border-radius-large) 0; }
     .auftrag.ueberfaellig .frist { color: var(--fehler); font-weight: 700; }
     .frist, .neu-eingewilligt { display: flex; align-items: center; gap: 4px; }
     .im-knopf { display: inline-block; margin-right: 8px; vertical-align: middle; }

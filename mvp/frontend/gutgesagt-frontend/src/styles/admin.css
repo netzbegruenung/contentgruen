@@ -11,8 +11,9 @@ app-admin-layout {
   --admin-karte-schatten: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+/* Im Dunkeln derselbe Schatten wie die Beitragskarten (.karte in styles.css) */
 html[data-theme='dark'] app-admin-layout {
-  --admin-karte-schatten: var(--elevation-2);
+  --admin-karte-schatten: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Karten der Übersicht (Bilanz, Suchen ohne Treffer, Muster-Hinweise, Feedback, Einladungen) */
@@ -83,6 +84,7 @@ app-admin-layout .mat-elevation-z2 {
   box-shadow: var(--admin-karte-schatten);
 }
 
+/* styles.css setzt im Dunkeln den Schatten von z2 mit !important; hier gewinnt der Kartenschatten */
 html[data-theme='dark'] app-admin-layout .mat-elevation-z1,
 html[data-theme='dark'] app-admin-layout .mat-elevation-z2 {
   box-shadow: var(--admin-karte-schatten) !important;

@@ -90,8 +90,8 @@ const TITEL: Record<string, string> = {
     .obergrenze, .dsfa { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .obergrenze code { font-size: 0.8125rem; color: var(--text-leise); }
     .obergrenze.aus, .gesperrt { color: var(--text-leise); }
-    .dsfa {
-      align-items: flex-start; flex-wrap: nowrap; margin-top: 8px !important; padding: 8px 12px;
+    .schalter .dsfa {
+      align-items: flex-start; flex-wrap: nowrap; margin-top: 8px; padding: 8px 12px;
       font-size: 0.875rem; background: var(--hinweis-tint); color: var(--text); border-radius: var(--border-radius-medium);
     }
     .dsfa mat-icon { flex-shrink: 0; font-size: 20px; width: 20px; height: 20px; color: var(--hinweis-text); }
